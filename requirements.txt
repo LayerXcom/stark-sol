@@ -1,0 +1,6 @@
+ethereum==2.3.2
+eth-tester[py-evm]==0.1.0b29
+pyblake2==1.1.2
+py-solc-simple==0.0.10
+pytest==3.7.1
+web3==4.8.1
