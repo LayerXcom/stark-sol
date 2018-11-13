@@ -26,17 +26,17 @@ library Merkle {
         pure 
         returns (bytes32)
     {
-        _index = getIndexInPermuted(_index, (2 ** _proof.length).div(2));
-        _index += 2 ** _proof.length;
+        uint j = getIndexInPermuted(_index, (2 ** _proof.length).div(2));
+        j += 2 ** _proof.length;
         bytes32 computedHash = _proof[0];
         for (uint i = 1; i < _proof.length; i++) {
             bytes32 proofElement = _proof[i];
-            if (_index % 2 == 0) {
+            if (j % 2 == 0) {
                 computedHash = keccak256(abi.encodePacked(computedHash, proofElement));
             } else {
                 computedHash = keccak256(abi.encodePacked(proofElement, computedHash));
             }
-            _index /= 2;
+            j /= 2;
         }
         require(computedHash == _root);
         return _proof[0];
