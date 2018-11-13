@@ -37,7 +37,7 @@ contract VerifierContract {
         uint _excludeMultiplesOf
     ) public returns (bool) 
     {
-        return false;
+        return true;
     }
 
     // verify a STARK
@@ -55,7 +55,7 @@ contract VerifierContract {
         FriComponent memory friComponent = _proof.friComponent;
 
         require(_steps <= 2 ** 32);
-        // require(isPowerOf2(steps) && isPowerOf2(_roundConstants.length));
+        require(isPowerOf2(steps) && isPowerOf2(_roundConstants.length));
         require(_roundConstants.length < _steps);
 
         uint precision = _steps.mul(EXTENSION_FACTOR);
@@ -63,8 +63,13 @@ contract VerifierContract {
         uint skips = precision.div(_steps);
         uint skips2 = _steps.div(_roundConstants.length);
         
-        // uint[] constantsMiniPolynomial =
-        // require(verifyLowDegreeProof(bytes32 lRoot, uint G2, FriComponent friComponent, uint _steps * 2, uint MODULUS, uint EXTENSION_FACTOR));
+        uint[] constantsMiniPolynomial = fft(_roundConstants, MODULUS, (G2 ** (EXTENSION_FACTOR * skips2) % MODULUS, true);
+        require(verifyLowDegreeProof(lRoot, G2, friComponent, _steps * 2, MODULUS, EXTENSION_FACTOR));
+
+        // uint k1 = keccak256(abi.encodePacked(root, 0x01)).toUint(0);
+        // uint k2 = keccak256(abi.encodePacked(root, 0x02)).toUint(0);
+        // uint k3 = keccak256(abi.encodePacked(root, 0x03)).toUint(0);
+        // uint k4 = keccak256(abi.encodePacked(root, 0x04)).toUint(0);
 
         uint k1 = uint(keccak256(abi.encodePacked(root, 0x01)));
         uint k2 = uint(keccak256(abi.encodePacked(root, 0x02)));
@@ -85,17 +90,55 @@ contract VerifierContract {
             // a branch check for L
             uint lx = uint(root.verifyBranch(positions[i], branches[i * 3 + 2]));
 
-            uint px = mBranch.slice
-            uint pG1x = 
-            uint dx = 
-            uint bx = 
+            uint px = mBranch1.slice(0, 32).toUint(0);
+            uint pG1x = mBranch2.slice(0, 32).toUint(0);
+            uint dx = mBranch1.slice(32, 32).toUint(0);
+            uint bx = mBranch2.slice(64, 32).toUint(0);
+
+            uint zValue = polyDiv((x ** steps) % MODULUS - 1, x - lastStepPosition);
+            uint kx = evalPolyAt(constantsMiniPolynomial, (x ** skips2) % MODULUS);
+
+            // Check transition constraints C(P(x)) = Z(x) * D(x)
+            require((pG1x - px ** 3 - kx - zValue * dx) % MODULUS == 0);
+
+            // Check boundary constraints B(x) * Q(x) + I(x) = P(x)
+            uint[3] interpolant = lagrangeInterp2([1, lastStepPosition], [_input, _output]);
+            uint[] zeropoly2 = mulPolys([-1, 1], [-lastStepPosition, 1]);
+            require((px - bx * evalPolyAt(zeropoly2, x) - evalPolyAt(interpolant, x)) % MODULUS == 0);
+
+            // Check correctness of the linear combination
+            require((lx - dx - k1 * px - k2 * px * xToTheSteps - k3 * bx - k4 * bx * xToTheSteps) % MODULUS == 0);
         }
 
         return true;
     }
 
-    function getPseudorandomIndices() internal returns (uint[]) {
+    function isPowerOf2(uint _x) internal pure returns (uint) {
+        return 0;
+    }
 
+    function getPseudorandomIndices(bytes32 _seed, uint _modulus, uint _count, uint _excludeMultiplesOf) internal returns (uint[]) {
+        return [0];
+    }
+
+    function polyDiv(uint _x, uint _y) internal returns (uint) {
+        return 0;
+    }
+
+    function evalPolyAt(uint[] _p, uint _x) internal returns (uint) {
+        return 0;
+    }
+
+    function fft(uint[] _vals, uint _modulus, uint _rootOfUnity, bool isInv) internal returns (uint[]) {
+        return [0];
+    }
+
+    function lagrangeInterp2(uint[2] _xs, uint[2] _ys) internal returns (uint[]) {
+        return [0];
+    }
+
+    function mulPolys(uint[] _a, uint[] _b) internal returns (uint[]) {
+        return [0];
     }
 
 }
