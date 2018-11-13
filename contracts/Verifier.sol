@@ -2,9 +2,13 @@ pragma solidity ^0.4.24;
 pragma experimental ABIEncoderV2;
 
 import "./SafeMath.sol";
+import "./BytesLib.sol";
+import "./Merkle.sol";
 
 contract VerifierContract {
     using SafeMath for uint;
+    using BytesLib for bytes;
+    using Merkle for bytes32;
 
     struct Proof {
         bytes32 root;               // merkle root of P, D and B - evaluations 
@@ -55,9 +59,9 @@ contract VerifierContract {
         require(_roundConstants.length < _steps);
 
         uint precision = _steps.mul(EXTENSION_FACTOR);
-        uint G2 = (7 ** ((modulus - 1).div(precision))) % MODULUS;
-        uint skips = precision.div(steps);
-        uint skips = steps.div(_roundConstants.length);
+        uint G2 = (7 ** ((MODULUS - 1).div(precision))) % MODULUS;
+        uint skips = precision.div(_steps);
+        uint skips2 = _steps.div(_roundConstants.length);
         
         // uint[] constantsMiniPolynomial =
         // require(verifyLowDegreeProof(bytes32 lRoot, uint G2, FriComponent friComponent, uint _steps * 2, uint MODULUS, uint EXTENSION_FACTOR));
@@ -67,12 +71,31 @@ contract VerifierContract {
         uint k3 = uint(keccak256(abi.encodePacked(root, 0x03)));
         uint k4 = uint(keccak256(abi.encodePacked(root, 0x04)));
 
-        uint[] positions = getPseudoramdomIndicies();
-        
-        return false;
+        uint[] positions = getPseudoramdomIndicies(lRoot, precision, SPOT_CHECK_SECURITY_FACTOR, EXTENSION_FACTOR);
+        uint lastStepPosition = (G2 ** ((steps - 1).mul(skips))) % MODULUS;
+
+        for (uint i; i < positions.length; i++) {
+            uint x = (G2 ** positions[i]) % MODULUS;
+            uint xToTheSteps = (x ** _steps) % MODULUS;
+
+            // a branch check for P, D and B
+            bytes memory mBranch1 = root.verifyBranch(positions[i], branches[i * 3]);
+            // a branch check for P of g1x
+            bytes memory mBranch2 = root.verifyBranch((positions[i].add(skips)) % precision, branches[i * 3 + 1]);
+            // a branch check for L
+            uint lx = uint(root.verifyBranch(positions[i], branches[i * 3 + 2]));
+
+            uint px = mBranch.slice
+            uint pG1x = 
+            uint dx = 
+            uint bx = 
+        }
+
+        return true;
     }
 
-    function getPseudorandomIndices() private returns (uint[]) {
+    function getPseudorandomIndices() internal returns (uint[]) {
 
     }
+
 }

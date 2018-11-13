@@ -24,7 +24,7 @@ library Merkle {
     ) 
         internal 
         pure 
-        returns (bytes32)
+        returns (bytes)
     {
         uint j = getIndexInPermuted(_index, (2 ** _proof.length).div(2));
         j += 2 ** _proof.length;
