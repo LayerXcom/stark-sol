@@ -113,8 +113,16 @@ contract VerifierContract {
         return true;
     }
 
-    function isPowerOf2(uint _x) internal pure returns (uint) {
-        return 0;
+    function isPowerOf2(uint _x) internal pure returns (bool) {
+        if (x%2 != 0) {
+            return isPowerOf2(_x/2);
+        }
+
+        if (x == 1) {
+            return true;
+        }
+
+        return false;
     }
 
     function getPseudorandomIndices(bytes32 _seed, uint _modulus, uint _count, uint _excludeMultiplesOf) internal returns (uint[]) {
@@ -138,7 +146,13 @@ contract VerifierContract {
     }
 
     function mulPolys(uint[] _a, uint[] _b) internal returns (uint[]) {
-        return [0];
-    }
+        uint[] memory out = new uint[]((_a.length).add(_b.length).sub(1));
 
+        for (uint i = 0; i < _a.length; i++) {
+            for (uint j = 0; j < _b.length; j++) {
+                out[i+j] = _a[i] * _b[j];
+            }
+        }
+        return out;
+    }
 }
