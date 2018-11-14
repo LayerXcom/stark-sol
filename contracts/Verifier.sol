@@ -13,7 +13,7 @@ contract VerifierContract {
     struct Proof {
         bytes32 root;               // merkle root of P, D and B - evaluations 
         bytes32 lRoot;              // merkle root of L - evaluations
-        bytes[] branches;           // branches of P, D and B - evaluations
+        bytes[][] branches;           // branches of P, D and B - evaluations
         FriComponent friComponent;  // low-degree proofs
     }
 
@@ -51,7 +51,7 @@ contract VerifierContract {
     {
         bytes32 root = _proof.root;
         bytes32 lRoot = _proof.lRoot;
-        bytes[] memory branches = _proof.branches;
+        bytes[][] memory branches = _proof.branches;
         FriComponent memory friComponent = _proof.friComponent;
 
         require(_steps <= 2 ** 32);
@@ -76,7 +76,7 @@ contract VerifierContract {
         uint k3 = uint(keccak256(abi.encodePacked(root, 0x03)));
         uint k4 = uint(keccak256(abi.encodePacked(root, 0x04)));
 
-        uint[] positions = getPseudorandomIndices(lRoot, precision, SPOT_CHECK_SECURITY_FACTOR, EXTENSION_FACTOR);
+        uint[] memory positions = getPseudorandomIndices(lRoot, precision, SPOT_CHECK_SECURITY_FACTOR, EXTENSION_FACTOR);
         uint lastStepPosition = (G2 ** ((_steps - 1).mul(skips))) % MODULUS;
 
         for (uint i; i < positions.length; i++) {
