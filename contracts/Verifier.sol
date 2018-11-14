@@ -115,7 +115,7 @@ contract VerifierContract {
 
     function isPowerOf2(uint _x) internal pure returns (bool) {
         if (x%2 != 0) {
-            return isPowerOf2(_x/2);
+            return isPowerOf2(_x.div(2));
         }
 
         if (x == 1) {
@@ -134,15 +134,31 @@ contract VerifierContract {
     }
 
     function evalPolyAt(uint[] _p, uint _x) internal returns (uint) {
-        return 0;
+        uint out = 0;
+        uint powerOfX = 1;
+
+        for (uint i = 0; i < _p.length; i++) {
+            out = out.add(powerOfX.mul(_p[i]));
+            powerOfX = powerOfX.mul(_x).div(MODULUS);
+        }
+        return out.div(MODULUS);
     }
 
     function fft(uint[] _vals, uint _modulus, uint _rootOfUnity, bool isInv) internal returns (uint[]) {
         return [0];
     }
 
-    function lagrangeInterp2(uint[2] _xs, uint[2] _ys) internal returns (uint[]) {
+    function lagrangeInterp(uint[] _xs, uint[] _ys) internal returns (uint[]) {
         return [0];
+    }
+
+    // optimized for degree 2
+    function lagrangeInterp2(uint[] _xs, uint[] _ys) internal returns (uint[]) {
+        return [0];
+    }
+
+    function multiInterp4(uint[][] _xsets, uint[][] _ysets) internal returns (uint[][]) {
+        return [[0]];
     }
 
     function mulPolys(uint[] _a, uint[] _b) internal returns (uint[]) {
