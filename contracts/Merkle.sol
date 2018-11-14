@@ -20,7 +20,7 @@ library Merkle {
     function verifyBranch(
         bytes32 _root, 
         uint _index, 
-        bytes32[] _proof
+        bytes[] _proof
     ) 
         internal 
         pure 
