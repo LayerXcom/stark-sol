@@ -22,7 +22,8 @@ contract VerifierContract {
         bytes[] branches;  // branches of the column and the four values in the polynominal
     }
 
-    uint constant MODULUS = 2 ** 256 - 2 ** 32 * 351 + 1;
+    // (for avoiding overflow) 2 ** 256 - 2 ** 32 * 351 + 1 =
+    uint constant MODULUS = 115792089237316195423570985008687907853269984665640564039457584006405596119041;
     uint constant SPOT_CHECK_SECURITY_FACTOR = 80;
     uint constant EXTENSION_FACTOR = 8;
 
@@ -52,7 +53,7 @@ contract VerifierContract {
         bytes32 root = _proof.root;
         bytes32 lRoot = _proof.lRoot;
         bytes[][] memory branches = _proof.branches;
-        FriComponent memory friComponent = _proof.friComponent;
+        FriComponent[] memory friComponent = _proof.friComponent;
 
         require(_steps <= 2 ** 32);
         require(isPowerOf2(_steps) && isPowerOf2(_roundConstants.length));
@@ -63,7 +64,7 @@ contract VerifierContract {
         uint skips = precision.div(_steps);
         uint skips2 = _steps.div(_roundConstants.length);
         
-        uint[] constantsMiniPolynomial = fft(_roundConstants, MODULUS, (G2 ** (EXTENSION_FACTOR * skips2)) % MODULUS, true);
+        uint[] memory constantsMiniPolynomial = fft(_roundConstants, MODULUS, (G2 ** (EXTENSION_FACTOR * skips2)) % MODULUS, true);
         require(verifyLowDegreeProof(lRoot, G2, friComponent, _steps * 2, MODULUS, EXTENSION_FACTOR));
 
         // uint k1 = keccak256(abi.encodePacked(root, 0x01)).toUint(0);
@@ -102,8 +103,8 @@ contract VerifierContract {
             require((pG1x - px ** 3 - kx - zValue * dx) % MODULUS == 0);
 
             // Check boundary constraints B(x) * Q(x) + I(x) = P(x)
-            uint[3] interpolant = lagrangeInterp2([1, lastStepPosition], [_input, _output]);
-            uint[] zeropoly2 = mulPolys([-1, 1], [-lastStepPosition, 1]);
+            uint[] memory interpolant = lagrangeInterp2([1, lastStepPosition], [_input, _output]);
+            uint[] memory zeropoly2 = mulPolys([uint(-1), 1], [-lastStepPosition, 1]);
             require((px - bx * evalPolyAt(zeropoly2, x) - evalPolyAt(interpolant, x)) % MODULUS == 0);
 
             // Check correctness of the linear combination
@@ -126,7 +127,8 @@ contract VerifierContract {
     }
 
     function getPseudorandomIndices(bytes32 _seed, uint _modulus, uint _count, uint _excludeMultiplesOf) internal returns (uint[]) {
-        return [0];
+        uint[] memory a = new uint[](3);
+        return a;
     }
 
     function polyDiv(uint _x, uint _y) internal returns (uint) {
@@ -145,27 +147,32 @@ contract VerifierContract {
     }
 
     function _fft(uint[] _vals, uint _modulus, uint _rootOfUnity) internal returns (uint[]) {
-        return [0];
+        uint[] memory a = new uint[](3);
+        return a;
     }
 
     function fft(uint[] _vals, uint _modulus, uint _rootOfUnity, bool isInv) internal returns (uint[]) {
-        return [0];
+        uint[] memory a = new uint[](3);
+        return a;
     }
 
     function lagrangeInterp(uint[] _xs, uint[] _ys) internal returns (uint[]) {
-        return [0];
+        uint[] memory a = new uint[](3);
+        return a;
     }
 
     // optimized for degree 2
-    function lagrangeInterp2(uint[] _xs, uint[] _ys) internal returns (uint[]) {
-        return [0];
+    function lagrangeInterp2(uint[2] _xs, uint[2] _ys) internal returns (uint[]) {
+        uint[] memory a = new uint[](3);
+        return a;
     }
 
     function multiInterp4(uint[][] _xsets, uint[][] _ysets) internal returns (uint[][]) {
-        return [[0]];
+        uint[][] memory a = new uint[][](3);
+        return a;
     }
 
-    function mulPolys(uint[] _a, uint[] _b) internal returns (uint[]) {
+    function mulPolys(uint[2] _a, uint[2] _b) internal returns (uint[]) {
         uint[] memory out = new uint[]((_a.length).add(_b.length).sub(1));
 
         for (uint i = 0; i < _a.length; i++) {
