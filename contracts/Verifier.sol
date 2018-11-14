@@ -115,7 +115,7 @@ contract VerifierContract {
 
     function isPowerOf2(uint _x) internal pure returns (bool) {
         if (x%2 != 0) {
-            return isPowerOf2(_x);
+            return isPowerOf2(_x/2);
         }
 
         if (x == 1) {
