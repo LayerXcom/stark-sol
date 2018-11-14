@@ -24,3 +24,7 @@ class TestingLanguage(object):
         self.verifier_contract = verifier_contract
         self.ethtester = ethtester
         self.accounts = get_accounts(ethtester)
+
+    def is_power_of_2(self, x):
+        self.verifier_contract.isPowerOf2(x)
+        
