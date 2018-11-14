@@ -55,7 +55,7 @@ contract VerifierContract {
         FriComponent memory friComponent = _proof.friComponent;
 
         require(_steps <= 2 ** 32);
-        require(isPowerOf2(steps) && isPowerOf2(_roundConstants.length));
+        require(isPowerOf2(_steps) && isPowerOf2(_roundConstants.length));
         require(_roundConstants.length < _steps);
 
         uint precision = _steps.mul(EXTENSION_FACTOR);
@@ -63,7 +63,7 @@ contract VerifierContract {
         uint skips = precision.div(_steps);
         uint skips2 = _steps.div(_roundConstants.length);
         
-        uint[] constantsMiniPolynomial = fft(_roundConstants, MODULUS, (G2 ** (EXTENSION_FACTOR * skips2) % MODULUS, true);
+        uint[] constantsMiniPolynomial = fft(_roundConstants, MODULUS, (G2 ** (EXTENSION_FACTOR * skips2)) % MODULUS, true);
         require(verifyLowDegreeProof(lRoot, G2, friComponent, _steps * 2, MODULUS, EXTENSION_FACTOR));
 
         // uint k1 = keccak256(abi.encodePacked(root, 0x01)).toUint(0);
@@ -76,8 +76,8 @@ contract VerifierContract {
         uint k3 = uint(keccak256(abi.encodePacked(root, 0x03)));
         uint k4 = uint(keccak256(abi.encodePacked(root, 0x04)));
 
-        uint[] positions = getPseudoramdomIndicies(lRoot, precision, SPOT_CHECK_SECURITY_FACTOR, EXTENSION_FACTOR);
-        uint lastStepPosition = (G2 ** ((steps - 1).mul(skips))) % MODULUS;
+        uint[] positions = getPseudorandomIndices(lRoot, precision, SPOT_CHECK_SECURITY_FACTOR, EXTENSION_FACTOR);
+        uint lastStepPosition = (G2 ** ((_steps - 1).mul(skips))) % MODULUS;
 
         for (uint i; i < positions.length; i++) {
             uint x = (G2 ** positions[i]) % MODULUS;
@@ -95,7 +95,7 @@ contract VerifierContract {
             uint dx = mBranch1.slice(32, 32).toUint(0);
             uint bx = mBranch2.slice(64, 32).toUint(0);
 
-            uint zValue = polyDiv((x ** steps) % MODULUS - 1, x - lastStepPosition);
+            uint zValue = polyDiv((x ** _steps) % MODULUS - 1, x - lastStepPosition);
             uint kx = evalPolyAt(constantsMiniPolynomial, (x ** skips2) % MODULUS);
 
             // Check transition constraints C(P(x)) = Z(x) * D(x)
