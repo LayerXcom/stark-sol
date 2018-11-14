@@ -139,9 +139,13 @@ contract VerifierContract {
 
         for (uint i = 0; i < _p.length; i++) {
             out = out.add(powerOfX.mul(_p[i]));
-            powerOfX = powerOfX.mul(_x).div(MODULUS);
+            powerOfX = powerOfX.mul(_x).mod(MODULUS);
         }
-        return out.div(MODULUS);
+        return out.mod(MODULUS);
+    }
+
+    function _fft(uint[] _vals, uint _modulus, uint _rootOfUnity) internal returns (uint[]) {
+        return [0];
     }
 
     function fft(uint[] _vals, uint _modulus, uint _rootOfUnity, bool isInv) internal returns (uint[]) {
