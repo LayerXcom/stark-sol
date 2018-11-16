@@ -1,9 +1,11 @@
 pragma solidity ^0.4.24;
 
 import "./SafeMath.sol";
+import "./BytesLib.sol";
 
 library Merkle {
     using SafeMath for uint;
+    using BytesLib for bytes;
 
     function getIndexInPermuted(
         uint _x, 
@@ -28,17 +30,17 @@ library Merkle {
     {
         uint j = getIndexInPermuted(_index, (2 ** _proof.length).div(2));
         j += 2 ** _proof.length;
-        bytes32 computedHash = _proof[0];
+        bytes memory computedHash = _proof[0];
         for (uint i = 1; i < _proof.length; i++) {
-            bytes32 proofElement = _proof[i];
+            bytes memory proofElement = _proof[i];
             if (j % 2 == 0) {
-                computedHash = keccak256(abi.encodePacked(computedHash, proofElement));
+                computedHash = abi.encodePacked(keccak256(abi.encodePacked(computedHash, proofElement)));
             } else {
-                computedHash = keccak256(abi.encodePacked(proofElement, computedHash));
+                computedHash = abi.encodePacked(keccak256(abi.encodePacked(proofElement, computedHash)));
             }
             j /= 2;
         }
-        require(computedHash == _root);
+        require(computedHash.equal(abi.encodePacked(_root)));         
         return _proof[0];
     }
 }
