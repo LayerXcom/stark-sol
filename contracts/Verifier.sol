@@ -22,7 +22,7 @@ contract VerifierContract {
         bytes[] branches;  // branches of the column and the four values in the polynominal
     }
     
-    struct Dates {
+    struct Data {
         uint precision;
         uint G2;
         uint skips;
@@ -34,7 +34,7 @@ contract VerifierContract {
         uint[] positions;
     }
     
-    struct Dates2 {
+    struct Data2 {
         uint x;
         uint xToThe_steps;
         bytes mBranch1;
@@ -87,7 +87,7 @@ contract VerifierContract {
         require(isPowerOf2(_steps) && isPowerOf2(_roundConstants.length));
         require(_roundConstants.length < _steps);
         
-        Dates memory dates = Dates({
+        Data memory data = Data({
             precision: _steps.mul(EXTENSION_FACTOR),
             G2:  (7 ** ((MODULUS - 1).div(_steps.mul(EXTENSION_FACTOR)))) % MODULUS,  // TODO: fix not to be overflowed
             skips: _steps.mul(EXTENSION_FACTOR).div(_steps),
@@ -99,35 +99,35 @@ contract VerifierContract {
             positions: getPseudorandomIndices(_proof.lRoot, _steps.mul(EXTENSION_FACTOR), SPOT_CHECK_SECURITY_FACTOR, EXTENSION_FACTOR)
         });
         
-        require(verifyLowDegreeProof(_proof.lRoot, dates.G2, dates.friComponent, _steps * 2, MODULUS, EXTENSION_FACTOR));
+        require(verifyLowDegreeProof(_proof.lRoot, data.G2, data.friComponent, _steps * 2, MODULUS, EXTENSION_FACTOR));
 
 
-        for (uint i; i < dates.positions.length; i++) {
+        for (uint i; i < data.positions.length; i++) {
             
-            Dates2 memory dates2 = Dates2({
-                x: (dates.G2 ** dates.positions[i]) % MODULUS,
-                xToThe_steps: (((dates.G2 ** dates.positions[i]) % MODULUS) ** _steps) % MODULUS,
-                mBranch1: _proof.root.verifyBranch(dates.positions[i], dates.branches[i * 3]),    // a branch check for P, D and B
-                mBranch2: _proof.root.verifyBranch((dates.positions[i].add(skips)) % _steps.mul(EXTENSION_FACTOR), dates.branches[i * 3 + 1]),   // a branch check for P of g1x
-                lx: _proof.root.verifyBranch(dates.positions[i], dates.branches[i * 3 + 2]).toUint(0),  // a branch check for L
-                px: (_proof.root.verifyBranch(dates.positions[i], dates.branches[i * 3])).slice(0, 32).toUint(0),
-                pG1x: (_proof.root.verifyBranch((dates.positions[i].add(skips)) % _steps.mul(EXTENSION_FACTOR), dates.branches[i * 3 + 1])).slice(0, 32).toUint(0),
-                dx: (_proof.root.verifyBranch(dates.positions[i], dates.branches[i * 3])).slice(32, 32).toUint(0),
-                bx: (_proof.root.verifyBranch((dates.positions[i].add(skips)) % _steps.mul(EXTENSION_FACTOR), dates.branches[i * 3 + 1])).slice(64, 32).toUint(0),
-                zValue: polyDiv((((dates.G2 ** dates.positions[i]) % MODULUS) ** _steps) % MODULUS - 1, ((dates.G2 ** dates.positions[i]) % MODULUS) - dates.lastStepPosition),
-                kx: evalPolyAt(dates.constantsMiniPolynomial, (((dates.G2 ** dates.positions[i]) % MODULUS) ** dates.skips2) % MODULUS),
-                interpolant: lagrangeInterp2([1, dates.lastStepPosition], [_input, _output]),
-                zeropoly2: mulPolys([uint(-1), 1], [-dates.lastStepPosition, 1])
+            Data2 memory data2 = Data2({
+                x: (data.G2 ** data.positions[i]) % MODULUS,
+                xToThe_steps: (((data.G2 ** data.positions[i]) % MODULUS) ** _steps) % MODULUS,
+                mBranch1: _proof.root.verifyBranch(data.positions[i], data.branches[i * 3]),    // a branch check for P, D and B
+                mBranch2: _proof.root.verifyBranch((data.positions[i].add(skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1]),   // a branch check for P of g1x
+                lx: _proof.root.verifyBranch(data.positions[i], data.branches[i * 3 + 2]).toUint(0),  // a branch check for L
+                px: (_proof.root.verifyBranch(data.positions[i], data.branches[i * 3])).slice(0, 32).toUint(0),
+                pG1x: (_proof.root.verifyBranch((data.positions[i].add(skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1])).slice(0, 32).toUint(0),
+                dx: (_proof.root.verifyBranch(data.positions[i], data.branches[i * 3])).slice(32, 32).toUint(0),
+                bx: (_proof.root.verifyBranch((data.positions[i].add(skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1])).slice(64, 32).toUint(0),
+                zValue: polyDiv((((data.G2 ** data.positions[i]) % MODULUS) ** _steps) % MODULUS - 1, ((data.G2 ** data.positions[i]) % MODULUS) - data.lastStepPosition),
+                kx: evalPolyAt(data.constantsMiniPolynomial, (((data.G2 ** data.positions[i]) % MODULUS) ** data.skips2) % MODULUS),
+                interpolant: lagrangeInterp2([1, data.lastStepPosition], [_input, _output]),
+                zeropoly2: mulPolys([uint(-1), 1], [-data.lastStepPosition, 1])
             });                        
     
             // Check transition constraints C(P(x)) = Z(x) * D(x)
-            require((dates2.pG1x - dates2.px ** 3 - dates2.kx - dates2.zValue * dates2.dx) % MODULUS == 0);
+            require((data2.pG1x - data2.px ** 3 - data2.kx - data2.zValue * data2.dx) % MODULUS == 0);
     
             // Check boundary constraints B(x) * Q(x) + I(x) = P(x)            
-            require((dates2.px - dates2.bx * evalPolyAt(dates2.zeropoly2, dates2.x) - evalPolyAt(dates2.interpolant, dates2.x)) % MODULUS == 0);
+            require((data2.px - data2.bx * evalPolyAt(data2.zeropoly2, data2.x) - evalPolyAt(data2.interpolant, data2.x)) % MODULUS == 0);
     
             // Check correctness of the linear combination
-            require((dates2.lx - dates2.dx - uint(keccak256(abi.encodePacked(_proof.root, 0x01))) * dates2.px - uint(keccak256(abi.encodePacked(_proof.root, 0x02))) * dates2.px * dates2.xToThe_steps -  uint(keccak256(abi.encodePacked(_proof.root, 0x03))) * dates2.bx - uint(keccak256(abi.encodePacked(_proof.root, 0x04))) * dates2.bx * dates2.xToThe_steps) % MODULUS == 0);
+            require((data2.lx - data2.dx - uint(keccak256(abi.encodePacked(_proof.root, 0x01))) * data2.px - uint(keccak256(abi.encodePacked(_proof.root, 0x02))) * data2.px * data2.xToThe_steps -  uint(keccak256(abi.encodePacked(_proof.root, 0x03))) * data2.bx - uint(keccak256(abi.encodePacked(_proof.root, 0x04))) * data2.bx * data2.xToThe_steps) % MODULUS == 0);
             return true;
         }
 

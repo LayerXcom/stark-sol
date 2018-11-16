@@ -6,8 +6,6 @@ from ethereum.abi import ContractTranslator
 from ethereum.config import config_metropolis
 from src.deployer import Deployer
 from solc_simple import Builder
-# import testlang
-
 
 GAS_LIMIT = 8000000
 START_GAS = GAS_LIMIT - 1000000
