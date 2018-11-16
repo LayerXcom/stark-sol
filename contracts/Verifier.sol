@@ -136,7 +136,7 @@ contract VerifierContract {
     
 
     function isPowerOf2(uint _x) public pure returns (bool) {
-        if (_x%2 != 0) {
+        if (_x % 2 == 0) {
             return isPowerOf2(_x.div(2));
         }
 
