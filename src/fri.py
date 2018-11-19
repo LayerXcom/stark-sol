@@ -43,16 +43,21 @@ def prove_low_degree(values, root_of_unity, maxdeg_plus_1, modulus, exclude_mult
     m2 = merkelize(column)
 
     # Pseudo-randomly select y indices to sample
-    ys = get_pseudorandom_indices(m2[1], len(column), 40, exclude_multiples_of=exclude_multiples_of)
+    ys = get_pseudorandom_indices(m2[1], len(column), 40, exclude_multiples_of=exclude_multiples_of)    
 
     # Compute the Merkle branches for the values in the polynomial and the column
-    branches = []
+    branchesForColumn = []
+    branchesForPolys = []
+    # for y in ys:
+    #     branches.append([mk_branch(m2, y)] +
+    #                     [mk_branch(m, y + (len(xs) // 4) * j) for j in range(4)])
+
     for y in ys:
-        branches.append([mk_branch(m2, y)] +
-                        [mk_branch(m, y + (len(xs) // 4) * j) for j in range(4)])
+        branchesForColumn.append(mk_branch(m2, y))
+        branchesForPolys.append([mk_branch(m, y + (len(xs) // 4) * j) for j in range(4)])
 
     # This component of the proof
-    o = [m2[1], branches]
+    o = [m2[1], branchesForColumn, branchesForPolys]    
 
     # Recurse...
     return [o] + prove_low_degree(column, f.exp(root_of_unity, 4),
@@ -85,7 +90,7 @@ def verify_low_degree_proof(merkle_root, root_of_unity, proof, maxdeg_plus_1, mo
 
         # Calculate the pseudo-randomly sampled y indices
         ys = get_pseudorandom_indices(root2, roudeg // 4, 40,
-                                      exclude_multiples_of=exclude_multiples_of)
+                                      exclude_multiples_of=exclude_multiples_of)                                      
 
         # For each y coordinate, get the x coordinates on the row, the values on
         # the row, and the value at that y from the column

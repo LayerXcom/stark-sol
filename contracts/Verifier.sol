@@ -55,7 +55,7 @@ contract VerifierContract {
     uint constant SPOT_CHECK_SECURITY_FACTOR = 80;
     uint constant EXTENSION_FACTOR = 8;
 
-    uint _steps = 2 ** 8;
+    uint _steps = 2 ** 5;
     uint G2 = (7 ** ((MODULUS - 1).div(_steps.mul(EXTENSION_FACTOR)))) % MODULUS;
     uint skips = _steps.mul(EXTENSION_FACTOR).div(_steps);
     uint lastStepPosition = (G2 ** ((_steps - 1).mul(skips))) % MODULUS;
@@ -77,7 +77,7 @@ contract VerifierContract {
     // verify a STARK
     function verifyMimcProof(
         uint _input, 
-        uint __steps, 
+        // uint _steps, 
         uint[] _roundConstants, 
         uint _output, 
         Proof _proof
@@ -108,12 +108,12 @@ contract VerifierContract {
                 x: (data.G2 ** data.positions[i]) % MODULUS,
                 xToThe_steps: (((data.G2 ** data.positions[i]) % MODULUS) ** _steps) % MODULUS,
                 mBranch1: _proof.root.verifyBranch(data.positions[i], data.branches[i * 3]),    // a branch check for P, D and B
-                mBranch2: _proof.root.verifyBranch((data.positions[i].add(skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1]),   // a branch check for P of g1x
+                mBranch2: _proof.root.verifyBranch((data.positions[i].add(data.skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1]),   // a branch check for P of g1x
                 lx: _proof.root.verifyBranch(data.positions[i], data.branches[i * 3 + 2]).toUint(0),  // a branch check for L
                 px: (_proof.root.verifyBranch(data.positions[i], data.branches[i * 3])).slice(0, 32).toUint(0),
-                pG1x: (_proof.root.verifyBranch((data.positions[i].add(skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1])).slice(0, 32).toUint(0),
+                pG1x: (_proof.root.verifyBranch((data.positions[i].add(data.skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1])).slice(0, 32).toUint(0),
                 dx: (_proof.root.verifyBranch(data.positions[i], data.branches[i * 3])).slice(32, 32).toUint(0),
-                bx: (_proof.root.verifyBranch((data.positions[i].add(skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1])).slice(64, 32).toUint(0),
+                bx: (_proof.root.verifyBranch((data.positions[i].add(data.skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1])).slice(64, 32).toUint(0),
                 zValue: polyDiv((((data.G2 ** data.positions[i]) % MODULUS) ** _steps) % MODULUS - 1, ((data.G2 ** data.positions[i]) % MODULUS) - data.lastStepPosition),
                 kx: evalPolyAt(data.constantsMiniPolynomial, (((data.G2 ** data.positions[i]) % MODULUS) ** data.skips2) % MODULUS),
                 interpolant: lagrangeInterp2([1, data.lastStepPosition], [_input, _output]),
@@ -134,6 +134,9 @@ contract VerifierContract {
         return true;
     }
     
+    function setNewStep(uint _newSteps) public {
+        _steps = _newSteps
+    }
 
     function isPowerOf2(uint _x) public pure returns (bool) {
         if (_x % 2 == 0) {
