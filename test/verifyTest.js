@@ -20,18 +20,34 @@ for (var i; i<2; i++) {
 }
 
 friComponents.push({
-    root: proof.fri_components.direct_proof,
+    root: '',
     branchForColumns: '',
-    branchesForPolys: ''
+    branchesForPolys: '',
+    directProof: proof.fri_components.direct_proof
 })
 
+let proofForStark = {
+    root: '',
+    lRoot: '',
+    branches: '',
+    friComponent: [
+        {
+            root: '',
+            branchForColumns: '',
+            branchesForPolys: '',
+            friComponent: ''
+        }
+    ]
+}
 
-const proofForStark = {
+proofForStark = {
     root: proof.root,
     lRoot: proof.lRoot,
     branches: proof.branches,
     friComponent: friComponents
 }
+
+
 
 
 const Verifier = artifacts.require("VerifierContract");
@@ -44,7 +60,7 @@ contract('Verifier', ([owner]) => {
     });
 
     it("should be success", async () => {
-        const isVerifiable = await verifier.verifyMimcProof(input, roundConstants, output, proofForStark);
+        const isVerifiable = await verifier.verifyMimcProof(input, roundConstants, output, proofForStark); // TODO: 
         isVerifiable.should.equal(true);
     })
 
