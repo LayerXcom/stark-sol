@@ -33,15 +33,15 @@ def test_merkletree():
 #     except:
 #         pass
 
-def test_stark():
+def test_stark():        
     INPUT = 3
     import sys
     # LOGSTEPS = int(sys.argv[1]) if len(sys.argv) > 1 else 13
-    LOGSTEPS = 5
+    LOGSTEPS = 7
     # Full STARK test
     import random
     #constants = [random.randrange(mimc_stark.modulus) for i in range(64)]
-    constants = [(i**7) ^ 42 for i in range(16)]
+    constants = [(i**7) ^ 42 for i in range(64)]
     proof = mimc_stark.mk_mimc_proof(INPUT, 2**LOGSTEPS, constants)
     m_root, l_root, branches, fri_proof = proof
     # L1 = compression.bin_length(compression.compress_branches(branches))
@@ -49,16 +49,14 @@ def test_stark():
     # print("Approx proof length: %d (branches), %d (FRI proof), %d (total)" % (L1, L2, L1 + L2))
     # assert mimc_stark.verify_mimc_proof(3, 2**LOGSTEPS, constants, mimc_stark.mimc(3, 2**LOGSTEPS, constants), proof)    
     component0 = []
-    component1 = []
+    component1 = []    
     component2 = []
+
     for component in proof[3][:-1]:
-        component0.append(component[0])    
-            
-        component1 += component[1]
-            
-        for i_comp in component[2]:
-            component2 += i_comp
-    
+        component0.append(component[0])                                    
+        component1 += [[list(map(lambda x: '0x' + x.hex(), c)) for c in component[1]]]        
+        component2 += [[list(map(lambda x: '0x' + x.hex(), i)) for i_comp in component[2] for i in i_comp]]        
+        
     data = {
         'input': 3,
         'steps': 2**LOGSTEPS,
@@ -69,12 +67,12 @@ def test_stark():
             'lRoot': '0x' + proof[1].hex(),
             'branches': [list(map(lambda x: '0x' + x.hex(), branch)) for branch in proof[2]],
             'fri_components': {                                
-                'root2': [list(map(lambda x: '0x' + x.hex(), component0))],
+                'root2': list(map(lambda x: '0x' + x.hex(), component0)),
                 'branches2': {
-                    'branchForColumns': [list(map(lambda x: '0x' + x.hex(), componentForColumn)) for componentForColumn in component1],
-                    'branchForPolys' : [list(map(lambda x: '0x' + x.hex(), componentForPoly)) for componentForPoly in component2]
+                    'branch_for_columns': component1,                                        
+                    'branch_for_polys' : component2
                 },
-                'directProof': [list(map(lambda x: '0x' + x.hex(), proof[3][-1]))]
+                'direct_proof': [list(map(lambda x: '0x' + x.hex(), proof[3][-1]))]
             }
         }
     }
