@@ -55,11 +55,11 @@ def test_stark():
         component0.append(component[0])    
     
         for i in range(len(component[1])):
-            component1.append(component[1][i])        
+            component1 += component[1][i]
     
         for i in range(len(component[2])):            
             for j in range(len(component[2][i])):
-                component2.append(component[2][i][j])
+                component2 += component[2][i][j]
     
     data = {
         'input': 3,
