@@ -1,4 +1,5 @@
 from src import fft, mimc_stark, merkle_tree, compression, fri
+import json
 # from mimc_stark import mk_mimc_proof, modulus, mimc, verify_mimc_proof
 # from src.compression import compress_fri, compress_branches, bin_length
 # from merkle_tree import merkelize, mk_branch, verify_branch
@@ -32,7 +33,7 @@ def test_fri():
     except:
         pass
 
-def test_stark():
+def test_stark(testlang):
     INPUT = 3
     import sys
     # LOGSTEPS = int(sys.argv[1]) if len(sys.argv) > 1 else 13
@@ -46,7 +47,54 @@ def test_stark():
     L1 = compression.bin_length(compression.compress_branches(branches))
     L2 = compression.bin_length(compression.compress_fri(fri_proof))
     print("Approx proof length: %d (branches), %d (FRI proof), %d (total)" % (L1, L2, L1 + L2))
-    assert mimc_stark.verify_mimc_proof(3, 2**LOGSTEPS, constants, mimc_stark.mimc(3, 2**LOGSTEPS, constants), proof)
+    # assert mimc_stark.verify_mimc_proof(3, 2**LOGSTEPS, constants, mimc_stark.mimc(3, 2**LOGSTEPS, constants), proof)    
+    component0 = []
+    component1 = []
+    component2 = []
+    for component in proof[3]:
+        component0.append(component[0])
+    
+
+    # for component in proof[3]:
+    #     for branches2 in component[1]:
+    #         component1.append()
+
+    #         for i in range(5):
+    #             component1.append(branches2[i][0])
+    #             # component2.append(branches2[i])
+
+
+    # component[1] ==  branchesForColumn           
+    for component in proof[3]:
+        print(len(component[1])) # 40
+        for branches2 in component[1]:
+            print(len(branches2))
+            component1 = branches2[0]
+        # component1.append(component[1])
+    
+    data = {
+        'input': 3,
+        'steps': 2**LOGSTEPS,
+        'round_constants': constants,
+        'output': mimc_stark.mimc(3, 2**LOGSTEPS, constants),
+        'proof': {
+            'root': proof[0].hex(),
+            'lRoot': proof[1].hex(),
+            'branches': [list(map(lambda x: x.hex(), branch)) for branch in proof[2]],
+            'fri_components': {                
+                # 'root2': [list(map(lambda x: x.hex(), component0))],
+                'root2': [list(map(lambda x: x.hex(), component0))],
+                'branches2': {
+                    'branchForColumn': [list(map(lambda x: x.hex(), component1))]
+                    # 'branchForPolys' : [list(map(lambda x: x.hex(), component2))]
+                }
+            }
+        }
+    }
+    
+    fw = open('stark_proof.json', 'w')
+    json.dump(data, fw, indent='\t')
+    assert testlang.verifier_contract.verifyMimcProof(3, 2**LOGSTEPS, constants, mimc_stark.mimc(3, 2**LOGSTEPS, constants), proof) == True
 
 if __name__ == '__main__':
     test_stark()

@@ -85,7 +85,7 @@ def verify_low_degree_proof(merkle_root, root_of_unity, proof, maxdeg_plus_1, mo
 
         # Calculate the pseudo-randomly sampled y indices
         ys = get_pseudorandom_indices(root2, roudeg // 4, 40,
-                                      exclude_multiples_of=exclude_multiples_of)
+                                      exclude_multiples_of=exclude_multiples_of)                                      
 
         # For each y coordinate, get the x coordinates on the row, the values on
         # the row, and the value at that y from the column
