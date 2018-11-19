@@ -44,33 +44,24 @@ def test_stark(testlang):
     constants = [(i**7) ^ 42 for i in range(64)]
     proof = mimc_stark.mk_mimc_proof(INPUT, 2**LOGSTEPS, constants)
     m_root, l_root, branches, fri_proof = proof
-    L1 = compression.bin_length(compression.compress_branches(branches))
-    L2 = compression.bin_length(compression.compress_fri(fri_proof))
-    print("Approx proof length: %d (branches), %d (FRI proof), %d (total)" % (L1, L2, L1 + L2))
+    # L1 = compression.bin_length(compression.compress_branches(branches))
+    # L2 = compression.bin_length(compression.compress_fri(fri_proof))
+    # print("Approx proof length: %d (branches), %d (FRI proof), %d (total)" % (L1, L2, L1 + L2))
     # assert mimc_stark.verify_mimc_proof(3, 2**LOGSTEPS, constants, mimc_stark.mimc(3, 2**LOGSTEPS, constants), proof)    
     component0 = []
     component1 = []
     component2 = []
-    for component in proof[3]:
-        component0.append(component[0])
-    
+    for component in proof[3][:-1]:
+        component0.append(component[0])    
 
-    # for component in proof[3]:
-    #     for branches2 in component[1]:
-    #         component1.append()
+    for component in proof[3][:-1]:
+        for i in range(len(component[1])):
+            component1.append(component[1][i])        
 
-    #         for i in range(5):
-    #             component1.append(branches2[i][0])
-    #             # component2.append(branches2[i])
-
-
-    # component[1] ==  branchesForColumn           
-    for component in proof[3]:
-        print(len(component[1])) # 40
-        for branches2 in component[1]:
-            print(len(branches2))
-            component1 = branches2[0]
-        # component1.append(component[1])
+    for component in proof[3][:-1]:
+        for i in range(len(component[2])):            
+            for j in range(len(component[2][i])):
+                component2.append(component[2][i][j])
     
     data = {
         'input': 3,
@@ -81,13 +72,13 @@ def test_stark(testlang):
             'root': proof[0].hex(),
             'lRoot': proof[1].hex(),
             'branches': [list(map(lambda x: x.hex(), branch)) for branch in proof[2]],
-            'fri_components': {                
-                # 'root2': [list(map(lambda x: x.hex(), component0))],
+            'fri_components': {                                
                 'root2': [list(map(lambda x: x.hex(), component0))],
                 'branches2': {
-                    'branchForColumn': [list(map(lambda x: x.hex(), component1))]
-                    # 'branchForPolys' : [list(map(lambda x: x.hex(), component2))]
-                }
+                    'branchForColumns': [list(map(lambda x: x.hex(), componentForColumn)) for componentForColumn in component1],
+                    'branchForPolys' : [list(map(lambda x: x.hex(), componentForPoly)) for componentForPoly in component2]
+                },
+                'directProof': [list(map(lambda x: x.hex(), proof[3][-1]))]
             }
         }
     }
