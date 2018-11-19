@@ -37,11 +37,11 @@ def test_stark(testlang):
     INPUT = 3
     import sys
     # LOGSTEPS = int(sys.argv[1]) if len(sys.argv) > 1 else 13
-    LOGSTEPS = 10
+    LOGSTEPS = 5
     # Full STARK test
     import random
     #constants = [random.randrange(mimc_stark.modulus) for i in range(64)]
-    constants = [(i**7) ^ 42 for i in range(64)]
+    constants = [(i**7) ^ 42 for i in range(16)]
     proof = mimc_stark.mk_mimc_proof(INPUT, 2**LOGSTEPS, constants)
     m_root, l_root, branches, fri_proof = proof
     # L1 = compression.bin_length(compression.compress_branches(branches))
@@ -53,12 +53,10 @@ def test_stark(testlang):
     component2 = []
     for component in proof[3][:-1]:
         component0.append(component[0])    
-
-    for component in proof[3][:-1]:
+    
         for i in range(len(component[1])):
             component1.append(component[1][i])        
-
-    for component in proof[3][:-1]:
+    
         for i in range(len(component[2])):            
             for j in range(len(component[2][i])):
                 component2.append(component[2][i][j])
@@ -69,23 +67,23 @@ def test_stark(testlang):
         'round_constants': constants,
         'output': mimc_stark.mimc(3, 2**LOGSTEPS, constants),
         'proof': {
-            'root': proof[0].hex(),
-            'lRoot': proof[1].hex(),
-            'branches': [list(map(lambda x: x.hex(), branch)) for branch in proof[2]],
+            'root': '0x' + proof[0].hex(),
+            'lRoot': '0x' + proof[1].hex(),
+            'branches': [list(map(lambda x: '0x' + x.hex(), branch)) for branch in proof[2]],
             'fri_components': {                                
-                'root2': [list(map(lambda x: x.hex(), component0))],
+                'root2': [list(map(lambda x: '0x' + x.hex(), component0))],
                 'branches2': {
-                    'branchForColumns': [list(map(lambda x: x.hex(), componentForColumn)) for componentForColumn in component1],
-                    'branchForPolys' : [list(map(lambda x: x.hex(), componentForPoly)) for componentForPoly in component2]
+                    'branchForColumns': [list(map(lambda x: '0x' + x.hex(), componentForColumn)) for componentForColumn in component1],
+                    'branchForPolys' : [list(map(lambda x: '0x' + x.hex(), componentForPoly)) for componentForPoly in component2]
                 },
-                'directProof': [list(map(lambda x: x.hex(), proof[3][-1]))]
+                'directProof': [list(map(lambda x: '0x' + x.hex(), proof[3][-1]))]
             }
         }
     }
     
     fw = open('stark_proof.json', 'w')
     json.dump(data, fw, indent='\t')
-    assert testlang.verifier_contract.verifyMimcProof(3, 2**LOGSTEPS, constants, mimc_stark.mimc(3, 2**LOGSTEPS, constants), proof) == True
+    assert testlang.verifier_contract.verifyMimcProof(3, constants, mimc_stark.mimc(3, 2**LOGSTEPS, constants), proof) == True
 
 if __name__ == '__main__':
     test_stark()
