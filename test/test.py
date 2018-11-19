@@ -72,7 +72,7 @@ def test_stark():
                     'branch_for_columns': component1,                                        
                     'branch_for_polys' : component2
                 },
-                'direct_proof': [list(map(lambda x: '0x' + x.hex(), proof[3][-1]))]
+                'direct_proof': list(map(lambda x: '0x' + x.hex(), proof[3][-1]))
             }
         }
     }
