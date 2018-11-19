@@ -134,6 +134,9 @@ contract VerifierContract {
         return true;
     }
     
+    function setNewStep(uint _newSteps) public {
+        _steps = _newSteps
+    }
 
     function isPowerOf2(uint _x) public pure returns (bool) {
         if (_x % 2 == 0) {

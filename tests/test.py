@@ -11,29 +11,29 @@ def test_merkletree():
     assert merkle_tree.verify_branch(t[1], 59, b, output_as_int=True) == 59
     print('Merkle tree works')
     
-def test_fri():
-    # Pure FRI tests
-    poly = list(range(4096))
-    root_of_unity = pow(7, (mimc_stark.modulus-1)//16384, mimc_stark.modulus)
-    evaluations = fft.fft(poly, mimc_stark.modulus, root_of_unity)
-    proof = fri.prove_low_degree(evaluations, root_of_unity, 4096, mimc_stark.modulus)
-    print("Approx proof length: %d" % compression.bin_length(compression.compress_fri(proof)))
-    assert fri.verify_low_degree_proof(merkle_tree.merkelize(evaluations)[1], root_of_unity, proof, 4096, mimc_stark.modulus)
+# def test_fri():
+#     # Pure FRI tests
+#     poly = list(range(4096))
+#     root_of_unity = pow(7, (mimc_stark.modulus-1)//16384, mimc_stark.modulus)
+#     evaluations = fft.fft(poly, mimc_stark.modulus, root_of_unity)
+#     proof = fri.prove_low_degree(evaluations, root_of_unity, 4096, mimc_stark.modulus)
+#     print("Approx proof length: %d" % compression.bin_length(compression.compress_fri(proof)))
+#     assert fri.verify_low_degree_proof(merkle_tree.merkelize(evaluations)[1], root_of_unity, proof, 4096, mimc_stark.modulus)
     
-    try:
-        fakedata = [x if pow(3, i, 4096) > 400 else 39 for x, i in enumerate(evaluations)]
-        proof2 = fri.prove_low_degree(fakedata, root_of_unity, 4096, mimc_stark.modulus)
-        assert fri.verify_low_degree_proof(merkle_tree.merkelize(fakedata)[1], root_of_unity, proof, 4096, mimc_stark.modulus)
-        raise Exception("Fake data passed FRI")
-    except:
-        pass
-    try:
-        assert fri.verify_low_degree_proof(merkle_tree.merkelize(evaluations)[1], root_of_unity, proof, 2048, mimc_stark.modulus)
-        raise Exception("Fake data passed FRI")
-    except:
-        pass
+#     try:
+#         fakedata = [x if pow(3, i, 4096) > 400 else 39 for x, i in enumerate(evaluations)]
+#         proof2 = fri.prove_low_degree(fakedata, root_of_unity, 4096, mimc_stark.modulus)
+#         assert fri.verify_low_degree_proof(merkle_tree.merkelize(fakedata)[1], root_of_unity, proof, 4096, mimc_stark.modulus)
+#         raise Exception("Fake data passed FRI")
+#     except:
+#         pass
+#     try:
+#         assert fri.verify_low_degree_proof(merkle_tree.merkelize(evaluations)[1], root_of_unity, proof, 2048, mimc_stark.modulus)
+#         raise Exception("Fake data passed FRI")
+#     except:
+#         pass
 
-def test_stark(testlang):
+def test_stark():
     INPUT = 3
     import sys
     # LOGSTEPS = int(sys.argv[1]) if len(sys.argv) > 1 else 13
@@ -83,7 +83,7 @@ def test_stark(testlang):
     
     fw = open('stark_proof.json', 'w')
     json.dump(data, fw, indent='\t')
-    assert testlang.verifier_contract.verifyMimcProof(3, constants, mimc_stark.mimc(3, 2**LOGSTEPS, constants), proof) == True
+    # assert testlang.verifier_contract.verifyMimcProof(3, constants, mimc_stark.mimc(3, 2**LOGSTEPS, constants), proof) == True
 
 if __name__ == '__main__':
     test_stark()
