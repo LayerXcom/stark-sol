@@ -83,6 +83,7 @@ def test_stark():
     
     fw = open('stark_proof.json', 'w')
     json.dump(data, fw, indent='\t')
+    fw.close()
     # assert testlang.verifier_contract.verifyMimcProof(3, constants, mimc_stark.mimc(3, 2**LOGSTEPS, constants), proof) == True
 
 if __name__ == '__main__':
