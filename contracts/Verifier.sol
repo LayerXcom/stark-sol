@@ -232,14 +232,114 @@ contract VerifierContract {
         return out.mod(MODULUS);
     }
 
-    function _fft(uint[] _vals, uint _modulus, uint _rootOfUnity) internal returns (uint[]) {
-        uint[] memory a = new uint[](3);
-        return a;
+    function _simple_ft(uint[] _vals, uint _modulus, uint[] _roots) internal returns (uint[]) {
+        uint[] memory out = new uint[](_vals.length);
+        uint _L = _roots.length;
+
+        for (uint i = 0; i < _L; i++) {
+            uint v = 0;
+            for (uint j = 0; j < _L; j++) {
+                v = v.add(_vals[j].mul(_roots[(i.mul(j)).mod(_L)]));
+            }
+            out[i] = v;
+        }
+
+        return out;
+    }
+
+    function _fft(uint[] _vals, uint _modulus, uint[] _roots) internal returns (uint[]) {
+        if (_roots.length <= 4) {
+            return _simple_ft(_vals, _modulus, _roots);
+        }
+
+        uint _halfLength = _vals.length.div(2);
+
+        uint[] memory L = new uint[](_halfLength);
+        uint[] memory R = new uint[](_halfLength);
+        uint[] memory _eRoots = new uint[](_halfLength);
+
+        for (uint i = 0; i < _vals.length; i++) {
+            uint _i = i.div(2);
+            if (i.mod(2) == 0) {
+                L[_i] = _vals[i];
+                _eRoots[_i] = _roots[i];
+            } else {
+                R[_i] = _vals[i];
+            }
+        }
+
+        // recursive
+        L = _fft(L, _modulus, _eRoots);
+        R = _fft(R, _modulus, _eRoots);
+
+        uint[] memory out = new uint[](_vals.length);
+
+        for (i = 0; i < L.length; i++) {
+            uint _yTimesRoot = R[i].mul(_roots[i]);
+            out[i] = (L[i].add(_yTimesRoot)).mod(_modulus);
+            out[i.add(L.length)] = (L[i].sub(_yTimesRoot)).mod(_modulus);
+        }
+        return out;
     }
 
     function fft(uint[] _vals, uint _modulus, uint _rootOfUnity, bool isInv) internal returns (uint[]) {
-        uint[] memory a = new uint[](3);
-        return a;
+        require(_vals.length.mod(2) == 0);
+
+        // calculate the order
+        uint order = 0;
+        uint _v = 1;
+        while (_v != 1) {
+            order = order.add(1);
+            _v = _v.mul(_rootOfUnity);
+        }
+
+        order = order.sub(1);
+
+        // create an array of roots
+        uint[] memory _roots = new uint[](order);
+        for (uint i = 0; i < _roots.length; i++){
+            uint root;
+            if (i == 0) {
+                root = 1;
+            } else if (i == 1) {
+                root = _rootOfUnity;
+            } else {
+                root = _roots[i-1].mul(_rootOfUnity).mod(_modulus);
+            }
+            _roots[i] = root;
+        }
+
+        uint[] memory __vals = new uint[](_roots.length);
+        for (i = 0; i < _roots.length; i++) {
+            if (i < _vals.length) {
+                __vals[i] = _vals[i];
+            } else {
+                __vals[i] = 0;
+            }
+        }
+
+        if (isInv) {
+            uint[] memory _rootsInv = new uint[](_roots.length);
+            for (i = 0; i < _roots.length; i++) {
+                _rootsInv[i] = _roots[_roots.length.sub(1).sub(i)];
+            }
+
+            uint[] memory xs = _fft(__vals, _modulus, _rootsInv);
+
+            uint invLen = 1;
+            for (i = 0; i < _modulus.sub(2); i++) {
+                invLen = invLen.mul(invLen);
+            }
+            invLen = invLen.mod(_modulus);
+
+            uint[] out;
+            for (i = 0; i < xs.length; i++) {
+                out.push((xs[i].mul(invLen)).mod(_modulus));
+            }
+            return out;
+        }
+
+        return _fft(__vals, _modulus, _roots);
     }
 
     function lagrangeInterp(uint[] _xs, uint[] _ys) internal returns (uint[]) {
