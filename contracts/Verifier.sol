@@ -154,8 +154,30 @@ contract VerifierContract {
     }
 
     function getPseudorandomIndices(bytes32 _seed, uint _modulus, uint _count, uint _excludeMultiplesOf) internal returns (uint[]) {
-        uint[] memory a = new uint[](3);
-        return a;
+        require(_modulus < 2**24);
+        bytes memory data = abi.encodePacked(_seed);
+
+        while (data.length < _count*4) {
+            data.concat(abi.encodePacked(keccak256(data.slice(data.length - 32, 32))));
+        }
+
+        uint[] memory out = new uint[](data.length / 4);
+        uint start = 0;
+        uint j = 0;
+        if (_excludeMultiplesOf == 0) {
+            for (j = 0; j < out.length; j++) {
+                out[j] = (data.slice(start, 4).toUint(0)).mod(_modulus);
+                start += 4;
+            }
+        } else {
+            uint realModulus = _modulus.mul(_excludeMultiplesOf - 1);
+            for (j = 0; j < out.length; j++) {
+                uint x = (data.slice(start, 4).toUint(0)).mod(realModulus);
+                out[j] = x.add(1).add(x.div(_excludeMultiplesOf - 1));
+                start += 4;
+            }
+        }
+        return out;
     }
 
     function polyDiv(uint _x, uint _y) internal returns (uint) {
@@ -175,12 +197,12 @@ contract VerifierContract {
 
     function _simple_ft(uint[] _vals, uint _modulus, uint[] _roots) internal returns (uint[]) {
         uint[] memory out = new uint[](_vals.length);
-        uint _L = _roots.length;
+        uint L = _roots.length;
 
-        for (uint i = 0; i < _L; i++) {
+        for (uint i = 0; i < L; i++) {
             uint v = 0;
-            for (uint j = 0; j < _L; j++) {
-                v = v.add(_vals[j].mul(_roots[(i.mul(j)).mod(_L)]));
+            for (uint j = 0; j < L; j++) {
+                v = v.add(_vals[j].mul(_roots[(i.mul(j)).mod(L)]));
             }
             out[i] = v;
         }
@@ -193,19 +215,19 @@ contract VerifierContract {
             return _simple_ft(_vals, _modulus, _roots);
         }
 
-        uint _halfLength = _vals.length.div(2);
+        uint halfLength = _vals.length.div(2);
 
-        uint[] memory L = new uint[](_halfLength);
-        uint[] memory R = new uint[](_halfLength);
-        uint[] memory _eRoots = new uint[](_halfLength);
+        uint[] memory L = new uint[](halfLength);
+        uint[] memory R = new uint[](halfLength);
+        uint[] memory _eRoots = new uint[](halfLength);
 
         for (uint i = 0; i < _vals.length; i++) {
-            uint _i = i.div(2);
+            uint j = i.div(2);
             if (i.mod(2) == 0) {
-                L[_i] = _vals[i];
-                _eRoots[_i] = _roots[i];
+                L[j] = _vals[i];
+                _eRoots[j] = _roots[i];
             } else {
-                R[_i] = _vals[i];
+                R[j] = _vals[i];
             }
         }
 
@@ -216,9 +238,9 @@ contract VerifierContract {
         uint[] memory out = new uint[](_vals.length);
 
         for (i = 0; i < L.length; i++) {
-            uint _yTimesRoot = R[i].mul(_roots[i]);
-            out[i] = (L[i].add(_yTimesRoot)).mod(_modulus);
-            out[i.add(L.length)] = (L[i].sub(_yTimesRoot)).mod(_modulus);
+            uint yTimesRoot = R[i].mul(_roots[i]);
+            out[i] = (L[i].add(yTimesRoot)).mod(_modulus);
+            out[i.add(L.length)] = (L[i].sub(yTimesRoot)).mod(_modulus);
         }
         return out;
     }
@@ -228,30 +250,30 @@ contract VerifierContract {
 
         // calculate the order
         uint order = 0;
-        uint _v = 1;
-        while (_v != 1) {
+        uint i = 1;
+        while (i != 1) {
             order = order.add(1);
-            _v = _v.mul(_rootOfUnity);
+            i = i.mul(_rootOfUnity);
         }
 
         order = order.sub(1);
 
         // create an array of roots
-        uint[] memory _roots = new uint[](order);
-        for (uint i = 0; i < _roots.length; i++){
+        uint[] memory roots = new uint[](order);
+        for (i = 0; i < roots.length; i++){
             uint root;
             if (i == 0) {
                 root = 1;
             } else if (i == 1) {
                 root = _rootOfUnity;
             } else {
-                root = _roots[i-1].mul(_rootOfUnity).mod(_modulus);
+                root = roots[i-1].mul(_rootOfUnity).mod(_modulus);
             }
-            _roots[i] = root;
+            roots[i] = root;
         }
 
-        uint[] memory __vals = new uint[](_roots.length);
-        for (i = 0; i < _roots.length; i++) {
+        uint[] memory __vals = new uint[](roots.length);
+        for (i = 0; i < roots.length; i++) {
             if (i < _vals.length) {
                 __vals[i] = _vals[i];
             } else {
@@ -260,12 +282,12 @@ contract VerifierContract {
         }
 
         if (isInv) {
-            uint[] memory _rootsInv = new uint[](_roots.length);
-            for (i = 0; i < _roots.length; i++) {
-                _rootsInv[i] = _roots[_roots.length.sub(1).sub(i)];
+            uint[] memory rootsInv = new uint[](roots.length);
+            for (i = 0; i < roots.length; i++) {
+                rootsInv[i] = roots[roots.length.sub(1).sub(i)];
             }
 
-            uint[] memory xs = _fft(__vals, _modulus, _rootsInv);
+            uint[] memory xs = _fft(__vals, _modulus, rootsInv);
 
             uint invLen = 1;
             for (i = 0; i < _modulus.sub(2); i++) {
@@ -280,7 +302,7 @@ contract VerifierContract {
             return out;
         }
 
-        return _fft(__vals, _modulus, _roots);
+        return _fft(__vals, _modulus, roots);
     }
 
     function lagrangeInterp(uint[] _xs, uint[] _ys) internal returns (uint[]) {
