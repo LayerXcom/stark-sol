@@ -234,6 +234,8 @@ contract VerifierContract {
             _v = _v.mul(_rootOfUnity);
         }
 
+        order = order.sub(1);
+
         // create an array of roots
         uint[] memory _roots = new uint[](order);
         for (uint i = 0; i < _roots.length; i++){
@@ -258,9 +260,9 @@ contract VerifierContract {
         }
 
         if (isInv) {
-            uint[] _rootsInv;
+            uint[] memory _rootsInv = new uint[](_roots.length);
             for (i = 0; i < _roots.length; i++) {
-                _rootsInv.push(_roots[_roots.length.sub(1).sub(i)]);
+                _rootsInv[i] = _roots[_roots.length.sub(1).sub(i)];
             }
 
             uint[] memory xs = _fft(__vals, _modulus, _rootsInv);
