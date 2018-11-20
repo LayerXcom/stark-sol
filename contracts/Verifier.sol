@@ -154,8 +154,29 @@ contract VerifierContract {
     }
 
     function getPseudorandomIndices(bytes32 _seed, uint _modulus, uint _count, uint _excludeMultiplesOf) internal returns (uint[]) {
-        uint[] memory a = new uint[](3);
-        return a;
+        require(_modulus < 2**24);
+        bytes memory data = abi.encodePacked(_seed);
+
+        while (data.length < _count*4) {
+            data.concat(abi.encodePacked(keccak256(data.slice(data.length - 32, 32))));
+        }
+
+        uint[] memory out = new uint[](data.length / 4);
+        uint j = 0;
+        if (_excludeMultiplesOf == 0) {
+            while (j < out.length-4) {
+                out[j] = (data.slice(j, 4).toUint(0)).mod(_modulus);
+                j = j + 4;
+            }
+        } else {
+            uint _realModulus = _modulus.mul(_excludeMultiplesOf - 1);
+            while (j < out.length-4) {
+                uint _x = (data.slice(j, 4).toUint(0)).mod(_realModulus);
+                out[j] = _x.add(1).add(_x.div(_excludeMultiplesOf - 1));
+                j = j + 4;
+            }
+        }
+        return out;
     }
 
     function polyDiv(uint _x, uint _y) internal returns (uint) {
