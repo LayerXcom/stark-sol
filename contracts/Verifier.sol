@@ -250,17 +250,17 @@ contract VerifierContract {
 
         // calculate the order
         uint order = 0;
-        uint v = 1;
-        while (v != 1) {
+        uint i = 1;
+        while (i != 1) {
             order = order.add(1);
-            v = v.mul(_rootOfUnity);
+            i = i.mul(_rootOfUnity);
         }
 
         order = order.sub(1);
 
         // create an array of roots
         uint[] memory roots = new uint[](order);
-        for (uint i = 0; i < roots.length; i++){
+        for (i = 0; i < roots.length; i++){
             uint root;
             if (i == 0) {
                 root = 1;
