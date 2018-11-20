@@ -173,12 +173,56 @@ contract VerifierContract {
         return out.mod(MODULUS);
     }
 
-    function _fft(uint[] _vals, uint _modulus, uint _rootOfUnity) internal returns (uint[]) {
-        uint[] memory a = new uint[](3);
-        return a;
+    function _simple_ft(uint[] _vals, uint _modulus, uint[] _roots) internal returns (uint[]) {
+        uint[] memory out = new uint[](_vals.length);
+        uint _L = _roots.length;
+
+        for (uint i = 0; i < _L; i++) {
+            uint v = 0;
+            for (uint j = 0; j < _L; j++) {
+                v = v.add(_vals[j].mul(_roots[(i.mul(j)).mod(_L)]));
+            }
+            out[i] = v;
+        }
+
+        return out;
+    }
+
+    function _fft(uint[] _vals, uint _modulus, uint[] _roots) internal returns (uint[]) {
+        if (_roots.length <= 4) {
+            return _simple_ft(_vals, _modulus, _roots);
+        }
+
+        uint[] memory L = new uint[](_vals.length.div(2));
+        uint[] memory R = new uint[](_vals.length.div(2));
+        uint[] memory _eRoots = new uint[](_vals.length.div(2));
+
+        for (uint i = 0; i < _vals.length; i++) {
+            if (i.mod(2) == 0) {
+                L[i.div(2)] = _vals[i];
+                _eRoots[i.div(2)] = _roots[i];
+            } else {
+                R[i.div(2)] = _vals[i];
+            }
+        }
+
+        // recursive
+        L = _fft(L, _modulus, _eRoots);
+        R = _fft(R, _modulus, _eRoots);
+
+        uint[] memory out = new uint[](_vals.length);
+
+        for (i = 0; i < L.length; i++) {
+            uint _yTimesRoot = R[i].mul(_roots[i]);
+            out[i] = (L[i].add(_yTimesRoot)).mod(_modulus);
+            out[i.add(L.length)] = (L[i].sub(_yTimesRoot)).mod(_modulus);
+        }
+        return out;
     }
 
     function fft(uint[] _vals, uint _modulus, uint _rootOfUnity, bool isInv) internal returns (uint[]) {
+        require(_vals.length.mod(2) == 0);
+
         uint[] memory a = new uint[](3);
         return a;
     }
