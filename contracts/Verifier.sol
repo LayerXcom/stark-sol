@@ -131,7 +131,8 @@ contract VerifierContract {
             roudeg = roudeg.div(4);
         }
         
-        
+        uint[] memory data = new uint[](_friComponents[_friComponents.length - 1].directProof);
+        for (uint k;)
 
         return true;
     }
@@ -213,6 +214,11 @@ contract VerifierContract {
     }
 
     function getPseudorandomIndices(bytes32 _seed, uint _modulus, uint _count, uint _excludeMultiplesOf) internal returns (uint[]) {
+        uint[] memory a = new uint[](3);
+        return a;
+    }
+
+    function getPowerCycle(uint _r, uint _mod) internal returns (uint[]) {
         uint[] memory a = new uint[](3);
         return a;
     }
