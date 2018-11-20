@@ -272,22 +272,24 @@ contract VerifierContract {
             roots[i] = root;
         }
 
-        uint[] memory __vals = new uint[](roots.length);
+        uint[] memory arr = new uint[](roots.length);
         for (i = 0; i < roots.length; i++) {
             if (i < _vals.length) {
-                __vals[i] = _vals[i];
+                arr[i] = _vals[i];
             } else {
-                __vals[i] = 0;
+                arr[i] = 0;
             }
         }
 
+        _vals = arr;
+
         if (isInv) {
-            uint[] memory rootsInv = new uint[](roots.length);
+            // uint[] memory rootsInv = new uint[](roots.length);
             for (i = 0; i < roots.length; i++) {
-                rootsInv[i] = roots[roots.length.sub(1).sub(i)];
+                arr[i] = roots[roots.length.sub(1).sub(i)];
             }
 
-            uint[] memory xs = _fft(__vals, _modulus, rootsInv);
+            uint[] memory xs = _fft(_vals, _modulus, arr);
 
             uint invLen = 1;
             for (i = 0; i < _modulus.sub(2); i++) {
@@ -301,8 +303,7 @@ contract VerifierContract {
             }
             return out;
         }
-
-        return _fft(__vals, _modulus, roots);
+        return _fft(_vals, _modulus, roots);
     }
 
     function lagrangeInterp(uint[] _xs, uint[] _ys) internal returns (uint[]) {
