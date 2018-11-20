@@ -195,7 +195,7 @@ contract VerifierContract {
         return out.mod(MODULUS);
     }
 
-    function _simple_ft(uint[] _vals, uint _modulus, uint[] _roots) internal returns (uint[]) {
+    function _simple_ft(uint[] _vals, uint[] _roots) internal returns (uint[]) {
         uint[] memory out = new uint[](_vals.length);
         uint L = _roots.length;
 
@@ -212,7 +212,7 @@ contract VerifierContract {
 
     function _fft(uint[] _vals, uint _modulus, uint[] _roots) internal returns (uint[]) {
         if (_roots.length <= 4) {
-            return _simple_ft(_vals, _modulus, _roots);
+            return _simple_ft(_vals, _roots);
         }
 
         uint halfLength = _vals.length.div(2);
@@ -295,9 +295,9 @@ contract VerifierContract {
             }
             invLen = invLen.mod(_modulus);
 
-            uint[] out;
+            uint[] memory out = new uint[](xs.length);
             for (i = 0; i < xs.length; i++) {
-                out.push((xs[i].mul(invLen)).mod(_modulus));
+                out[i] = (xs[i].mul(invLen)).mod(_modulus);
             }
             return out;
         }
