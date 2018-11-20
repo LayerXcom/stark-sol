@@ -19,7 +19,10 @@ contract VerifierContract {
 
     struct FriComponent {
         bytes32 root;      // merkle root of columns
-        bytes[] branches;  // branches of the column and the four values in the polynominal
+        // bytes[] branches;  // branches of the column and the four values in the polynominal
+        bytes32[] branchForColumns;
+        bytes32[] branchesForPolys;
+        bytes32[] directProof;
     }
     
     struct Data {
@@ -55,7 +58,7 @@ contract VerifierContract {
     uint constant SPOT_CHECK_SECURITY_FACTOR = 80;
     uint constant EXTENSION_FACTOR = 8;
 
-    uint _steps = 2 ** 5;
+    uint _steps = 2 ** 3;
     uint G2 = (7 ** ((MODULUS - 1).div(_steps.mul(EXTENSION_FACTOR)))) % MODULUS;
     uint skips = _steps.mul(EXTENSION_FACTOR).div(_steps);
     uint lastStepPosition = (G2 ** ((_steps - 1).mul(skips))) % MODULUS;
@@ -65,7 +68,7 @@ contract VerifierContract {
     function verifyLowDegreeProof(
         bytes32 _merkleRoot, 
         uint _rootOfUnity, 
-        FriComponent[] _friComponents, 
+        FriComponent[] _friComponents,         
         uint _maxDegPlus1, 
         uint _modulus, 
         uint _excludeMultiplesOf
@@ -80,7 +83,7 @@ contract VerifierContract {
         // uint _steps, 
         uint[] _roundConstants, 
         uint _output, 
-        Proof _proof
+        Proof _proof        
     ) public returns (bool) 
     {
         require(_steps <= 2 ** 32);
@@ -135,7 +138,7 @@ contract VerifierContract {
     }
     
     function setNewStep(uint _newSteps) public {
-        _steps = _newSteps
+        _steps = _newSteps;
     }
 
     function isPowerOf2(uint _x) public pure returns (bool) {

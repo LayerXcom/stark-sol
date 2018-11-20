@@ -43,7 +43,7 @@ def prove_low_degree(values, root_of_unity, maxdeg_plus_1, modulus, exclude_mult
     m2 = merkelize(column)
 
     # Pseudo-randomly select y indices to sample
-    ys = get_pseudorandom_indices(m2[1], len(column), 40, exclude_multiples_of=exclude_multiples_of)    
+    ys = get_pseudorandom_indices(m2[1], len(column), 10, exclude_multiples_of=exclude_multiples_of)    
 
     # Compute the Merkle branches for the values in the polynomial and the column
     branchesForColumn = []
@@ -89,7 +89,7 @@ def verify_low_degree_proof(merkle_root, root_of_unity, proof, maxdeg_plus_1, mo
         special_x = int.from_bytes(merkle_root, 'big') % modulus
 
         # Calculate the pseudo-randomly sampled y indices
-        ys = get_pseudorandom_indices(root2, roudeg // 4, 40,
+        ys = get_pseudorandom_indices(root2, roudeg // 4, 10,
                                       exclude_multiples_of=exclude_multiples_of)                                      
 
         # For each y coordinate, get the x coordinates on the row, the values on
