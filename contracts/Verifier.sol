@@ -20,8 +20,8 @@ contract VerifierContract {
     struct FriComponent {
         bytes32 root;      // merkle root of columns
         // bytes[] branches;  // branches of the column and the four values in the polynominal
-        bytes32[] branchForColumns;
-        bytes32[] branchesForPolys;
+        bytes[] branchForColumns;
+        bytes[] branchesForPolys;
         bytes32[] directProof;
     }
     
@@ -64,6 +64,17 @@ contract VerifierContract {
     uint lastStepPosition = (G2 ** ((_steps - 1).mul(skips))) % MODULUS;
     uint precision = _steps.mul(EXTENSION_FACTOR);
 
+
+    function getRoudeg(uint _rootOfUnity, uint _mod) private returns (uint) {
+        uint testVal = _rootOfUnity;
+        uint roudeg = 1;
+        while( testVal != 1) {
+            roudeg *= 2;
+            testVal = (testVal * testVal) % MODULUS;
+        }
+        return roudeg;
+    }
+
     // verify an FRI proof
     function verifyLowDegreeProof(
         bytes32 _merkleRoot, 
@@ -73,17 +84,54 @@ contract VerifierContract {
         uint _modulus, 
         uint _excludeMultiplesOf
     ) internal returns (bool) 
-    {
-        uint testVal = _rootOfUnity;
-        uint roudeg = 1;
-        while( testVal != 1) {
-            roudeg *= 2;
-            testval = (testval * testval) % MODULUS;
-        }
+    {        
+        uint roudeg = getRoudeg(_rootOfUnity, MODULUS);
 
-        uint[4] quadraticRootsOfUnity = [1,
-                                         _rootOfUnity ** (roudeg.div(4))
-        ]
+        // Powers of the given root of unity 1, p, p**2, p**3 such that p**4 = 1
+        uint[4] memory quadraticRootsOfUnity = [1,
+                                                (_rootOfUnity ** (roudeg.div(4))) % MODULUS,
+                                                (_rootOfUnity ** (roudeg.div(2))) % MODULUS,
+                                                (_rootOfUnity ** (roudeg.mul(3).div(4))) % MODULUS];
+        
+        for (uint i; i < _friComponents.length - 1; i++) {
+            bytes32 root2 = _friComponents[i].root;
+            bytes[] memory branchForColumns = _friComponents[i].branchForColumns;
+            bytes[] memory branchesForPolys = _friComponents[i].branchesForPolys;
+            
+            uint specialX = abi.encodePacked(_merkleRoot).toUint(0) % MODULUS;
+            uint[] memory ys = getPseudorandomIndices(root2, roudeg.div(4), 10, EXTENSION_FACTOR);
+            
+            uint[][] storage xcoords;    // TODO: calcurate length
+            uint[][] storage rows;
+            uint[] storage columnvals;
+            for (uint j; j < ys.length; j++) {
+                uint x1 = (_rootOfUnity ** ys[j]) % MODULUS;
+                uint[] storage xcoord;
+                uint[] storage row;   
+
+                for (uint k; k < 4; k++) {                                     
+                    xcoord.push(quadraticRootsOfUnity[k].mul(x1) % MODULUS);
+                    row.push(_merkleRoot.verifyBranch(ys[j] + roudeg.div(4) * k, branchesForPolys).toUint(0));  // TODO: devide 4 elements
+                    columnvals.push(root2.verifyBranch(ys[j], branchForColumns).toUint(0));  // TODO: devide 4 elements
+                }
+                
+                xcoords.push(xcoord);
+                rows.push(row);
+            }
+            
+            uint[][] memory polys = multiInterp4(xcoords, rows);
+                
+            for (uint l; l < polys.length; l++) {
+                require(evalPolyAt(polys[l], specialX) == columnvals[l]);
+            }
+            
+            _merkleRoot = root2;
+            _rootOfUnity = (_rootOfUnity ** 4) % MODULUS;
+            _maxDegPlus1 = _maxDegPlus1.div(4);
+            roudeg = roudeg.div(4);
+        }
+        
+        
 
         return true;
     }

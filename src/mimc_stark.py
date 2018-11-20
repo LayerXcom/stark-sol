@@ -10,7 +10,7 @@ modulus = 2**256 - 2**32 * 351 + 1
 f = PrimeField(modulus)
 nonresidue = 7
 
-spot_check_security_factor = 20 # default 80
+spot_check_security_factor = 80
 extension_factor = 8
 
 # Compute a MIMC permutation for some number of steps
