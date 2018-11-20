@@ -284,7 +284,6 @@ contract VerifierContract {
         _vals = arr;
 
         if (isInv) {
-            // uint[] memory rootsInv = new uint[](roots.length);
             for (i = 0; i < roots.length; i++) {
                 arr[i] = roots[roots.length.sub(1).sub(i)];
             }
