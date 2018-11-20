@@ -75,7 +75,7 @@ contract VerifierContract {
         return roudeg;
     }
 
-    // verify an FRI proof
+        // verify an FRI proof
     function verifyLowDegreeProof(
         bytes32 _merkleRoot, 
         uint _rootOfUnity, 
@@ -84,14 +84,14 @@ contract VerifierContract {
         uint _modulus, 
         uint _excludeMultiplesOf
     ) internal returns (bool) 
-    {        
+    {
         uint roudeg = getRoudeg(_rootOfUnity, MODULUS);
 
         // Powers of the given root of unity 1, p, p**2, p**3 such that p**4 = 1
         uint[4] memory quadraticRootsOfUnity = [1,
-                                                (_rootOfUnity ** (roudeg.div(4))) % MODULUS,
-                                                (_rootOfUnity ** (roudeg.div(2))) % MODULUS,
-                                                (_rootOfUnity ** (roudeg.mul(3).div(4))) % MODULUS];
+                                         (_rootOfUnity ** (roudeg.div(4))) % MODULUS,
+                                         (_rootOfUnity ** (roudeg.div(2))) % MODULUS,
+                                         (_rootOfUnity ** (roudeg.mul(3).div(4))) % MODULUS];
         
         for (uint i; i < _friComponents.length - 1; i++) {
             bytes32 root2 = _friComponents[i].root;
@@ -99,17 +99,19 @@ contract VerifierContract {
             bytes[] memory branchesForPolys = _friComponents[i].branchesForPolys;
             
             uint specialX = abi.encodePacked(_merkleRoot).toUint(0) % MODULUS;
-            uint[] memory ys = getPseudorandomIndices(root2, roudeg.div(4), 10, EXTENSION_FACTOR);
+            uint[] memory ys = getPseudorandomIndices(root2, roudeg.div(4), 10, _excludeMultiplesOf);
             
             uint[][] storage xcoords;    // TODO: calcurate length
             uint[][] storage rows;
             uint[] storage columnvals;
             for (uint j; j < ys.length; j++) {
                 uint x1 = (_rootOfUnity ** ys[j]) % MODULUS;
-                uint[] storage xcoord;
-                uint[] storage row;   
-
-                for (uint k; k < 4; k++) {                                     
+                
+                for (uint k; k < 4; k++) {
+                    uint[] storage xcoord;
+                    uint[] storage row;
+                    uint[] storage columnval;
+                    
                     xcoord.push(quadraticRootsOfUnity[k].mul(x1) % MODULUS);
                     row.push(_merkleRoot.verifyBranch(ys[j] + roudeg.div(4) * k, branchesForPolys).toUint(0));  // TODO: devide 4 elements
                     columnvals.push(root2.verifyBranch(ys[j], branchForColumns).toUint(0));  // TODO: devide 4 elements
@@ -131,8 +133,50 @@ contract VerifierContract {
             roudeg = roudeg.div(4);
         }
         
-        uint[] memory data = new uint[](_friComponents[_friComponents.length - 1].directProof);
-        for (uint k;)
+        // uint[] memory data = new uint[](_friComponents[_friComponents.length - 1].directProof.length);
+        uint[] storage data; // TODO: calc length
+        for (uint m; m < _friComponents[_friComponents.length - 1].directProof.length; m++) {
+            data.push((_friComponents[_friComponents.length - 1].directProof[m]).toUint(0));
+        }
+        
+        require(_maxDegPlus1 <= 16);
+        
+        bytes32[] memory mtree = data.merkelize();
+        require(mtree[1] == _merkleRoot);
+        
+        uint[] memory powers = getPowerCycle(_rootOfUnity, MODULUS);
+        uint[] storage pts;
+        
+        if (_excludeMultiplesOf != 0) {
+            for (uint n; n < data.length; n++) {
+                if (n % _excludeMultiplesOf != 0) {
+                    pts.push(n);
+                }
+            }
+        } else {
+            for (uint o; o < data.length; o++) {
+                pts.push(o);
+            }
+        }
+        
+        uint[] storage xs2;
+        uint[] storage ys2;
+        uint[] storage slicedPts;
+        
+        for (uint p; p < _maxDegPlus1; p++) {
+            slicedPts.push(pts[p]);
+        }
+        
+        for (uint q; q < slicedPts.length; q++) {
+            xs2.push(powers[q]);
+            ys2.push(data[q]);
+        }
+        
+        uint[] memory poly = lagrangeInterp(xs2, ys2);
+        
+        for (uint r; r < slicedPts.length; r++) {
+            require(evalPolyAt(poly, powers[r]) == data[r]);
+        }
 
         return true;
     }
