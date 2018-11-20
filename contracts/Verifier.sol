@@ -72,8 +72,19 @@ contract VerifierContract {
         uint _maxDegPlus1, 
         uint _modulus, 
         uint _excludeMultiplesOf
-    ) public returns (bool) 
+    ) internal returns (bool) 
     {
+        uint testVal = _rootOfUnity;
+        uint roudeg = 1;
+        while( testVal != 1) {
+            roudeg *= 2;
+            testval = (testval * testval) % MODULUS;
+        }
+
+        uint[4] quadraticRootsOfUnity = [1,
+                                         _rootOfUnity ** (roudeg.div(4))
+        ]
+
         return true;
     }
 
