@@ -193,16 +193,19 @@ contract VerifierContract {
             return _simple_ft(_vals, _modulus, _roots);
         }
 
-        uint[] memory L = new uint[](_vals.length.div(2));
-        uint[] memory R = new uint[](_vals.length.div(2));
-        uint[] memory _eRoots = new uint[](_vals.length.div(2));
+        uint _halfLength = _vals.length.div(2);
+
+        uint[] memory L = new uint[](_halfLength);
+        uint[] memory R = new uint[](_halfLength);
+        uint[] memory _eRoots = new uint[](_halfLength);
 
         for (uint i = 0; i < _vals.length; i++) {
+            uint _i = i.div(2);
             if (i.mod(2) == 0) {
-                L[i.div(2)] = _vals[i];
-                _eRoots[i.div(2)] = _roots[i];
+                L[_i] = _vals[i];
+                _eRoots[_i] = _roots[i];
             } else {
-                R[i.div(2)] = _vals[i];
+                R[_i] = _vals[i];
             }
         }
 
@@ -223,8 +226,59 @@ contract VerifierContract {
     function fft(uint[] _vals, uint _modulus, uint _rootOfUnity, bool isInv) internal returns (uint[]) {
         require(_vals.length.mod(2) == 0);
 
-        uint[] memory a = new uint[](3);
-        return a;
+        // calculate the order
+        uint order = 0;
+        uint _v = 1;
+        while (_v != 1) {
+            order = order.add(1);
+            _v = _v.mul(_rootOfUnity);
+        }
+
+        // create an array of roots
+        uint[] memory _roots = new uint[](order);
+        for (uint i = 0; i < _roots.length; i++){
+            uint root;
+            if (i == 0) {
+                root = 1;
+            } else if (i == 1) {
+                root = _rootOfUnity;
+            } else {
+                root = _roots[i-1].mul(_rootOfUnity).mod(_modulus);
+            }
+            _roots[i] = root;
+        }
+
+        uint[] memory __vals = new uint[](_roots.length);
+        for (i = 0; i < _roots.length; i++) {
+            if (i < _vals.length) {
+                __vals[i] = _vals[i];
+            } else {
+                __vals[i] = 0;
+            }
+        }
+
+        if (isInv) {
+            uint[] _rootsInv;
+            for (i = 0; i < _roots.length; i++) {
+                _rootsInv.push(_roots[_roots.length.sub(1).sub(i)]);
+            }
+
+            uint[] memory xs = _fft(__vals, _modulus, _rootsInv);
+
+            uint invLen = 1;
+            for (i = 0; i < _modulus.sub(2); i++) {
+                invLen = invLen.mul(invLen);
+            }
+            invLen = invLen.mod(_modulus);
+
+            uint[] out;
+            for (i = 0; i < xs.length; i++) {
+                out.push((xs[i].mul(invLen)).mod(_modulus));
+            }
+            return out;
+        }
+
+        return _fft(__vals, _modulus, _roots);
     }
 
     function lagrangeInterp(uint[] _xs, uint[] _ys) internal returns (uint[]) {
