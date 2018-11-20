@@ -162,18 +162,19 @@ contract VerifierContract {
         }
 
         uint[] memory out = new uint[](data.length / 4);
+        uint start = 0;
         uint j = 0;
         if (_excludeMultiplesOf == 0) {
-            while (j < out.length-4) {
-                out[j] = (data.slice(j, 4).toUint(0)).mod(_modulus);
-                j = j + 4;
+            for (j = 0; j < out.length; j++) {
+                out[j] = (data.slice(start, 4).toUint(0)).mod(_modulus);
+                start += 4;
             }
         } else {
             uint _realModulus = _modulus.mul(_excludeMultiplesOf - 1);
-            while (j < out.length-4) {
-                uint _x = (data.slice(j, 4).toUint(0)).mod(_realModulus);
+            for (j = 0; j < out.length; j++) {
+                uint _x = (data.slice(start, 4).toUint(0)).mod(_realModulus);
                 out[j] = _x.add(1).add(_x.div(_excludeMultiplesOf - 1));
-                j = j + 4;
+                start += 4;
             }
         }
         return out;
