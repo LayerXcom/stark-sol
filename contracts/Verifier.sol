@@ -90,8 +90,7 @@ contract VerifierContract {
         bytes32 _merkleRoot,  
         uint _rootOfUnity,
         FriComponent[] _friComponents,      
-        uint _maxDegPlus1, 
-        uint _modulus, 
+        uint _maxDegPlus1,         
         uint _excludeMultiplesOf
     ) internal returns (bool) 
     {          
@@ -112,7 +111,7 @@ contract VerifierContract {
             data3.roudeg = data3.roudeg.div(4);
         }                
 
-        require(verifyDirectLowDegreeProof(_maxDegPlus1, _friComponents[_friComponents.length - 1].directProof, _merkleRoot, _excludeMultiplesOf));
+        require(verifyDirectFriProof(_maxDegPlus1, _friComponents[_friComponents.length - 1].directProof, _merkleRoot, _excludeMultiplesOf));
 
         return true;
     }        
@@ -151,7 +150,7 @@ contract VerifierContract {
         return _friComponents[i].root;
     }
 
-    function verifyDirectLowDegreeProof(uint _maxDegPlus1, bytes[] _directProof, bytes32 _merkleRoot, uint _excludeMultiplesOf) private returns (bool) {
+    function verifyDirectFriProof(uint _maxDegPlus1, bytes[] _directProof, bytes32 _merkleRoot, uint _excludeMultiplesOf) private returns (bool) {
         uint[] memory data = new uint[](_directProof.length);
         uint i;        
         for (i = 0; i < _directProof.length; i++) {
@@ -226,7 +225,7 @@ contract VerifierContract {
             positions: getPseudorandomIndices(_proof.lRoot, _steps.mul(EXTENSION_FACTOR), SPOT_CHECK_SECURITY_FACTOR, EXTENSION_FACTOR)
         });
         
-        require(verifyLowDegreeProof(_proof.lRoot, G2, data.friComponent, _steps * 2, MODULUS, EXTENSION_FACTOR));
+        require(verifyLowDegreeProof(_proof.lRoot, G2, data.friComponent, _steps * 2, EXTENSION_FACTOR));
 
 
         for (uint i; i < data.positions.length; i++) {
