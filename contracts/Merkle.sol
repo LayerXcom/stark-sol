@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 
 import "./SafeMath.sol";
 import "./BytesLib.sol";
@@ -22,11 +22,11 @@ library Merkle {
     function verifyBranch(
         bytes32 _root, 
         uint _index, 
-        bytes[] _proof
+        bytes[] memory _proof
     ) 
         internal 
         pure 
-        returns (bytes)
+        returns (bytes memory)
     {
         uint j = getIndexInPermuted(_index, (2 ** _proof.length).div(2));
         j += 2 ** _proof.length;
@@ -44,12 +44,12 @@ library Merkle {
         return _proof[0];
     }
 
-    function merkelize(uint[]) internal returns (bytes32[]) {
+    function merkelize(uint[] memory _a) internal returns (bytes32[] memory) {
         bytes32[] memory a = new bytes32[](3);
         return a;
     }
 
-    function permute4(uint[]) internal returns (uint[]) {
+    function permute4(uint[] memory _a) internal returns (uint[] memory) {
         uint[] memory a = new uint[](3);
         return a;
     }
