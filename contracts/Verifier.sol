@@ -83,122 +83,79 @@ contract VerifierContract {
     function verifyLowDegreeProof(
         bytes32 _merkleRoot,  
         uint _rootOfUnity,
-        FriComponent[] _friComponents,         
+        FriComponent[] _friComponents,      
         uint _maxDegPlus1, 
         uint _modulus, 
         uint _excludeMultiplesOf
     ) internal returns (bool) 
     {
-        uint roudeg = getRoudeg();
+        bytes32 merkleRoot = _merkleRoot;
+        // uint rootOfUnity = _rootOfUnity;
+        // uint maxDegPlus1 = _maxDegPlus1;
+        // uint roudeg = getRoudeg();
+        uint[3] memory numData = [_rootOfUnity, _maxDegPlus1, getRoudeg()];
 
         // Powers of the given root of unity 1, p, p**2, p**3 such that p**4 = 1
         uint[4] memory quadraticRootsOfUnity = [1,
-                                         (_rootOfUnity ** (roudeg.div(4))) % MODULUS,
-                                         (_rootOfUnity ** (roudeg.div(2))) % MODULUS,
-                                         (_rootOfUnity ** (roudeg.mul(3).div(4))) % MODULUS];
-        uint i;
-        uint k;
-        uint rootOfUnity = _rootOfUnity;
-        for (i = 0; i < _friComponents.length - 1; i++) {
-            bytes32 root2 = _friComponents[i].root;
-            bytes[] memory branchForColumns = _friComponents[i].branchForColumns;
-            bytes[] memory branchesForPolys = _friComponents[i].branchesForPolys;
-            
-            uint specialX = abi.encodePacked(_merkleRoot).toUint(0) % MODULUS;
-            uint[] memory ys = getPseudorandomIndices(root2, roudeg.div(4), 10, _excludeMultiplesOf);
-            
-            uint[][] storage xcoords;    // TODO: calcurate length
-            uint[][] storage rows;
-            uint[] storage columnvals;
-            uint j;
-            for (j = 0; j < ys.length; j++) {
-                uint x1 = (rootOfUnity ** ys[j]) % MODULUS; // TODO: fix
-                
-                for (k = 0; k < 4; k++) {
-                    uint[] storage xcoord;
-                    uint[] storage row;
-                    uint[] storage columnval;
-                    
-                    xcoord.push(quadraticRootsOfUnity[k].mul(x1) % MODULUS);
-                    row.push(_merkleRoot.verifyBranch(ys[j] + roudeg.div(4) * k, branchesForPolys).toUint(0));  // TODO: devide 4 elements
-                    columnvals.push(root2.verifyBranch(ys[j], branchForColumns).toUint(0));  // TODO: devide 4 elements
-                }
-                
-                xcoords.push(xcoord);
-                rows.push(row);
-            }
-            
-            uint[][] memory polys = multiInterp4(xcoords, rows);
-                
-            for (j = 0; j < polys.length; j++) {
-                require(evalPolyAt(polys[j], specialX) == columnvals[j]);
-            }
-            
-            _merkleRoot = root2;
-            rootOfUnity = (rootOfUnity ** 4) % MODULUS;
-            _maxDegPlus1 = _maxDegPlus1.div(4);
-            roudeg = roudeg.div(4);
-        }
+                                         (_rootOfUnity ** (numData[2].div(4))) % MODULUS,
+                                         (_rootOfUnity ** (numData[2].div(2))) % MODULUS,
+                                         (_rootOfUnity ** (numData[2].mul(3).div(4))) % MODULUS];        
         
-        // uint[] memory data = new uint[](_friComponents[_friComponents.length - 1].directProof.length);
-        // // uint[] storage data; // TODO: calc length
-        // for (i = 0; i < _friComponents[_friComponents.length - 1].directProof.length; i++) {
-        //     data[i] = (_friComponents[_friComponents.length - 1].directProof[i]).toUint(0)
-        //     // data.push((_friComponents[_friComponents.length - 1].directProof[i]).toUint(0));
-        // }
         
-        // require(_maxDegPlus1 <= 16);
-        
-        // bytes32[] memory mtree = data.merkelize();
-        // require(mtree[1] == _merkleRoot);
-        
-        // uint[] memory powers = getPowerCycle(ROOTOFUNITY, MODULUS);
-        // uint[] storage pts;
-        
-        // if (_excludeMultiplesOf != 0) {            
-        //     for (k = 0; k < data.length; k++) {
-        //         if (k % _excludeMultiplesOf != 0) {
-        //             pts.push(k);
-        //         }
-        //     }
-        // } else {
-        //     for (k = 0; k < data.length; k++) {
-        //         pts.push(k);
-        //     }
-        // }
-                
-        // uint[] memory slicedPts = new uint[](_maxDegPlus1);
-        
-        // for (i = 0; i < _maxDegPlus1; i++) {
-        //     slicedPts[i] = pts[i];            
-        // }
-
-        // uint[] memory xs2 = new uint[](slicedPts.length);
-        // uint[] memory ys2 = new uint[](slicedPts.length);
-        
-        // for (i = 0; i < slicedPts.length; i++) {
-        //     xs2[i] = powers[i];            
-        //     ys2[i] = data[i];            
-        // }
-        
-        // uint[] memory poly = lagrangeInterp(xs2, ys2);
-        
-        // for (i = 0; i < slicedPts.length; i++) {
-        //     require(evalPolyAt(poly, powers[i]) == data[i]);
-        // }
+        for (uint i = 0; i < _friComponents.length - 1; i++) {
+            merkleRoot = verifyFriProof(i, _friComponents, _merkleRoot, _excludeMultiplesOf, numData, quadraticRootsOfUnity);
+            numData[0] = (numData[0] ** 4) % MODULUS;
+            numData[1] = numData[1].div(4);
+            numData[2] = numData[2].div(4);
+        }                
 
         require(verifyDirectLowDegreeProof(_maxDegPlus1, _friComponents[_friComponents.length - 1].directProof, _merkleRoot, _excludeMultiplesOf));
 
         return true;
     }
 
+    function verifyFriProof(uint i, FriComponent[] _friComponents, bytes32 _merkleRoot, uint _excludeMultiplesOf, uint[3] numData, uint[4] quadraticRootsOfUnity) internal returns (bytes32) {
+        bytes32 root2 = _friComponents[i].root;
+        bytes[] memory branchForColumns = _friComponents[i].branchForColumns;
+        bytes[] memory branchesForPolys = _friComponents[i].branchesForPolys;
+                    
+        uint[] memory ys = getPseudorandomIndices(root2, numData[2].div(4), 10, _excludeMultiplesOf);
+        
+        uint[][] storage xcoords;    // TODO: calcurate length
+        uint[][] storage rows;
+        uint[] memory columnvals = new uint[](ys.length);
+        uint j;
+        for (j = 0; j < ys.length; j++) {
+            uint x1 = (numData[0] ** ys[j]) % MODULUS; // TODO: fix                
+
+            for (uint k = 0; k < 4; k++) {                    
+                uint[] memory xcoord = new uint[](4);
+                uint[] memory row = new uint[](4);                    
+                
+                xcoord[k] = quadraticRootsOfUnity[k].mul(x1) % MODULUS;                    
+                row[k] = _merkleRoot.verifyBranch(ys[j] + numData[2].div(4) * k, branchesForPolys).toUint(0); // TODO: devide 4 elements 
+            }                
+
+            columnvals[j] = root2.verifyBranch(ys[j], branchForColumns).toUint(0); // TODO: devide 4 elements
+            // columnvals.push(root2.verifyBranch(ys[j], branchForColumns).toUint(0));  
+            xcoords.push(xcoord);
+            rows.push(row);
+        }
+        
+        uint[][] memory polys = multiInterp4(xcoords, rows);
+            
+        for (j = 0; j < polys.length; j++) { 
+            // evaluate each polynomials at special x coord
+            require(evalPolyAt(polys[j], abi.encodePacked(_merkleRoot).toUint(0) % MODULUS) == columnvals[j]);
+        }
+        return root2;
+    }
+
     function verifyDirectLowDegreeProof(uint _maxDegPlus1, bytes[] _directProof, bytes32 _merkleRoot, uint _excludeMultiplesOf) internal returns (bool) {
         uint[] memory data = new uint[](_directProof.length);
-        uint i;
-        // uint[] storage data; // TODO: calc length
+        uint i;        
         for (i = 0; i < _directProof.length; i++) {
-            data[i] = (_directProof[i]).toUint(0);
-            // data.push((_friComponents[_friComponents.length - 1].directProof[i]).toUint(0));
+            data[i] = (_directProof[i]).toUint(0);            
         }
 
         require(_maxDegPlus1 <= 16);
