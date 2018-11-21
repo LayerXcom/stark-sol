@@ -631,7 +631,7 @@ contract VerifierContract {
     }
 
     // optimized for degree 2
-    function lagrangeInterp2(uint[2] _xs, uint[2] _ys) internal returns (uint[]) {
+    function lagrangeInterp2(uint[] _xs, uint[] _ys) internal returns (uint[]) {
         uint[] memory eq0 = new uint[](2);
         uint[] memory eq1 = new uint[](2);
         eq0[0] = - _xs[1].mod(MODULUS);
@@ -652,14 +652,79 @@ contract VerifierContract {
     }
 
     // optimized for degree 4
-    function lagrangeInterp4(uint[2] _xs, uint[2] _ys) internal returns (uint[]) {
-        uint[] memory a = new uint[](3);
-        return a;
+    function lagrangeInterp4(uint[] _xs, uint[] _ys) internal returns (uint[]) {
+        uint[] memory xxs = new uint[](6);
+        xxs[0] = _xs[0].mul(_xs[1]).mod(MODULUS); // 01
+        xxs[1] = _xs[0].mul(_xs[2]).mod(MODULUS); // 02
+        xxs[2] = _xs[0].mul(_xs[3]).mod(MODULUS); // 03
+        xxs[3] = _xs[1].mul(_xs[2]).mod(MODULUS); // 12
+        xxs[4] = _xs[1].mul(_xs[3]).mod(MODULUS); // 13
+        xxs[5] = _xs[2].mul(_xs[3]).mod(MODULUS); // 23
+
+        uint[4][4] memory eqs;
+        eqs[0][0] = -xxs[3].mul(_xs[3]).mod(MODULUS);
+        eqs[0][1] = xxs[3].add(xxs[4]).add(xxs[5]);
+        eqs[0][2] = -(_xs[1].add(_xs[2].add(_xs[3])));
+        eqs[0][3] = 1;
+
+        eqs[1][0] = -xxs[1].mul(_xs[3]).mod(MODULUS);
+        eqs[1][1] = xxs[1].add(xxs[2]).add(xxs[5]);
+        eqs[1][2] = -(_xs[0].add(_xs[2].add(_xs[3])));
+        eqs[1][3] = 1;
+
+        eqs[2][0] = -xxs[0].mul(_xs[3]).mod(MODULUS);
+        eqs[2][1] = xxs[0].add(xxs[2]).add(xxs[4]);
+        eqs[2][2] = -(_xs[0].add(_xs[1].add(_xs[3])));
+        eqs[2][3] = 1;
+
+        eqs[3][0] = -xxs[0].mul(_xs[2]).mod(MODULUS);
+        eqs[3][1] = xxs[0].add(xxs[1]).add(xxs[3]);
+        eqs[3][2] = -(_xs[0].add(_xs[1].add(_xs[2])));
+        eqs[3][3] = 1;
+
+        uint[] memory es = new uint[](4);
+
+        es[0] = evalPolyAt4(eqs[0], _xs[0]);
+        es[1] = evalPolyAt4(eqs[1], _xs[1]);
+        es[2] = evalPolyAt4(eqs[2], _xs[2]);
+        es[3] = evalPolyAt4(eqs[3], _xs[3]);
+
+        uint e01 = es[0].mul(es[1]);
+        uint e23 = es[2].mul(es[3]);
+        uint invall = inv(e01.mul(e23));
+
+        uint[] memory invYs = new uint[](4);
+        invYs[0] = _ys[0].mul(invall).mul(es[1]).mul(e23).mod(MODULUS);
+        invYs[1] = _ys[1].mul(invall).mul(es[0]).mul(e23).mod(MODULUS);
+        invYs[2] = _ys[2].mul(invall).mul(es[3]).mul(e01).mod(MODULUS);
+        invYs[3] = _ys[3].mul(invall).mul(es[2]).mul(e01).mod(MODULUS);
+
+
+        uint[] memory out = new uint[](4);
+        for (uint i = 0; i < 4; i++) {
+            out[i] = ((eqs[0][i].mul(invYs[0])
+                ).add(eqs[1][i].mul(invYs[1])
+                ).add(eqs[2][i].mul(invYs[2])
+                ).add(eqs[3][i].mul(invYs[3])
+            )).mod(MODULUS);
+        }
+        return out;
     }
 
     function multiInterp4(uint[][] _xsets, uint[][] _ysets) internal returns (uint[][]) {
         uint[][] memory a = new uint[][](3);
         return a;
+    }
+
+    function evalPolyAt4(uint[4] _p, uint _x) internal returns (uint) {
+        uint out = 0;
+        uint powerOfX = 1;
+
+        for (uint i = 0; i < _p.length; i++) {
+            out = out.add(powerOfX.mul(_p[i]));
+            powerOfX = powerOfX.mul(_x).mod(MODULUS);
+        }
+        return out.mod(MODULUS);
     }
 
     function evalQuartic(uint[] p, uint x) internal returns (uint) {
