@@ -361,7 +361,7 @@ contract VerifierContract {
     }
 
     function div(uint _x, uint _y) internal returns (uint) {
-        return _x.mul(inv(_y));
+        return _x.mul(inv(_y)).mod(MODULUS);
     }
 
     function evalPolyAt(uint[] _p, uint _x) internal returns (uint) {
@@ -425,6 +425,25 @@ contract VerifierContract {
 
     function divPolys(uint[] _a, uint[] _b) internal returns (uint[]) {
         require(_a.length >= _b.length);
+        if (_b.length == 1) {
+            return mulByConst(_a, inv(_b[0]));
+        }
+
+        uint apos = _a.length - 1;
+        uint bpos = _b.length - 1;
+        uint diff = apos - bpos;
+        uint[] memory out = new uint[](diff + 1);
+        while (diff >= 0) {
+            uint quot = div(_a[apos], _b[bpos]);
+            out[diff] = quot;
+            for (uint i = bpos; i >= 0; i--) {
+                _a[diff+i] -= _b[i].mul(quot);
+            }
+            apos -= 1;
+            diff -= 1;
+        }
+
+        return out;
     }
 
     function zPoly(uint[] _xs) internal returns (uint[]) {
@@ -433,7 +452,7 @@ contract VerifierContract {
 
         for (uint i = 0; i < _xs.length; i++) {
             for (uint j = 0; j < i; j++) {
-                out[out.length -1 - 1 - j] = out[out.length -1 - j].mul(_xs[i]);
+                out[out.length -1 - 1 - j] = out[out.length -1 - j].mul(_xs[i]).mod(MODULUS);
             }
         }
         return out;
