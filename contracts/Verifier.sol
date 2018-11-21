@@ -20,7 +20,6 @@ contract VerifierContract {
 
     struct FriComponent {
         bytes32 root;      // merkle root of columns
-        // bytes[] branches;  // branches of the column and the four values in the polynominal
         bytes[] branchForColumns;
         bytes[] branchesForPolys;
         bytes[] directProof;
@@ -54,6 +53,23 @@ contract VerifierContract {
         uint[] zeropoly2;
     }
 
+    struct Data3 {
+        bytes32 merkleRoot;
+        uint rootOfUnity;
+        uint maxDegPlus1;
+        uint roudeg;
+        uint[4] quarticRootsOfUnity;        
+        uint excludeMultiplesOf;        
+    }
+
+    struct Data4 {
+        uint[] ys;
+        uint[4][] xcoords;
+        uint[4][] rows;
+        uint[] columnvals;
+        uint j;
+    }
+
     // (for avoiding overflow) 2 ** 256 - 2 ** 32 * 351 + 1 =
     uint constant MODULUS = 115792089237316195423570985008687907853269984665640564039457584006405596119041;
     uint constant SPOT_CHECK_SECURITY_FACTOR = 80;
@@ -66,18 +82,8 @@ contract VerifierContract {
     uint G2 = (7 ** ((MODULUS - 1).div(_steps.mul(EXTENSION_FACTOR)))) % MODULUS;
     uint skips = _steps.mul(EXTENSION_FACTOR).div(_steps);
     uint lastStepPosition = (G2 ** ((_steps - 1).mul(skips))) % MODULUS;
-    uint precision = _steps.mul(EXTENSION_FACTOR);
-
-
-    function getRoudeg() private returns (uint) {
-        uint testVal = ROOTOFUNITY;
-        uint roudeg = 1;
-        while( testVal != 1) {
-            roudeg *= 2;
-            testVal = (testVal * testVal) % MODULUS;
-        }
-        return roudeg;
-    }
+    uint precision = _steps.mul(EXTENSION_FACTOR);    
+    
 
         // verify an FRI proof
     function verifyLowDegreeProof(
@@ -88,70 +94,64 @@ contract VerifierContract {
         uint _modulus, 
         uint _excludeMultiplesOf
     ) internal returns (bool) 
-    {
-        bytes32 merkleRoot = _merkleRoot;
-        // uint rootOfUnity = _rootOfUnity;
-        // uint maxDegPlus1 = _maxDegPlus1;
-        // uint roudeg = getRoudeg();
-        uint[3] memory numData = [_rootOfUnity, _maxDegPlus1, getRoudeg()];
+    {          
+        Data3 memory data3 = Data3({
+            merkleRoot: _merkleRoot,
+            rootOfUnity: _rootOfUnity,
+            maxDegPlus1: _maxDegPlus1,
+            roudeg: getRoudeg(),
+            // Powers of the given root of unity 1, p, p**2, p**3 such that p**4 = 1
+            quarticRootsOfUnity: [1, (_rootOfUnity ** (data3.roudeg.div(4))) % MODULUS, (_rootOfUnity ** (data3.roudeg.div(2))) % MODULUS, (_rootOfUnity ** (data3.roudeg.mul(3).div(4))) % MODULUS],                                                                                                                        
+            excludeMultiplesOf: _excludeMultiplesOf
+        });
 
-        // Powers of the given root of unity 1, p, p**2, p**3 such that p**4 = 1
-        uint[4] memory quadraticRootsOfUnity = [1,
-                                         (_rootOfUnity ** (numData[2].div(4))) % MODULUS,
-                                         (_rootOfUnity ** (numData[2].div(2))) % MODULUS,
-                                         (_rootOfUnity ** (numData[2].mul(3).div(4))) % MODULUS];        
-        
-        
         for (uint i = 0; i < _friComponents.length - 1; i++) {
-            merkleRoot = verifyFriProof(i, _friComponents, _merkleRoot, _excludeMultiplesOf, numData, quadraticRootsOfUnity);
-            numData[0] = (numData[0] ** 4) % MODULUS;
-            numData[1] = numData[1].div(4);
-            numData[2] = numData[2].div(4);
+            data3.merkleRoot = verifyFriProofs(i, _friComponents, data3);
+            data3.rootOfUnity = (data3.rootOfUnity ** 4) % MODULUS;
+            data3.maxDegPlus1 = data3.maxDegPlus1.div(4);
+            data3.roudeg = data3.roudeg.div(4);
         }                
 
         require(verifyDirectLowDegreeProof(_maxDegPlus1, _friComponents[_friComponents.length - 1].directProof, _merkleRoot, _excludeMultiplesOf));
 
         return true;
-    }
+    }        
 
-    function verifyFriProof(uint i, FriComponent[] _friComponents, bytes32 _merkleRoot, uint _excludeMultiplesOf, uint[3] numData, uint[4] quadraticRootsOfUnity) internal returns (bytes32) {
-        bytes32 root2 = _friComponents[i].root;
-        bytes[] memory branchForColumns = _friComponents[i].branchForColumns;
-        bytes[] memory branchesForPolys = _friComponents[i].branchesForPolys;
-                    
-        uint[] memory ys = getPseudorandomIndices(root2, numData[2].div(4), 10, _excludeMultiplesOf);
-        
-        uint[][] storage xcoords;    // TODO: calcurate length
-        uint[][] storage rows;
-        uint[] memory columnvals = new uint[](ys.length);
-        uint j;
-        for (j = 0; j < ys.length; j++) {
-            uint x1 = (numData[0] ** ys[j]) % MODULUS; // TODO: fix                
+    function verifyFriProofs(uint i, FriComponent[] _friComponents, Data3 _data3) private returns (bytes32) {
+        Data4 memory data4 = Data4({
+            ys: getPseudorandomIndices(_friComponents[i].root, _data3.roudeg.div(4), 10, _data3.excludeMultiplesOf),
+            xcoords: new uint[4][](data4.ys.length),
+            rows: new uint[4][](data4.ys.length),
+            columnvals: new uint[](data4.ys.length),
+            j: 0
+        });
+
+        for (data4.j = 0; data4.j < data4.ys.length; data4.j++) {
+            uint x1 = (_data3.rootOfUnity ** data4.ys[data4.j]) % MODULUS;
 
             for (uint k = 0; k < 4; k++) {                    
-                uint[] memory xcoord = new uint[](4);
-                uint[] memory row = new uint[](4);                    
+                uint[4] memory xcoord;
+                uint[4] memory row;
                 
-                xcoord[k] = quadraticRootsOfUnity[k].mul(x1) % MODULUS;                    
-                row[k] = _merkleRoot.verifyBranch(ys[j] + numData[2].div(4) * k, branchesForPolys).toUint(0); // TODO: devide 4 elements 
+                xcoord[k] = _data3.quarticRootsOfUnity[k].mul(x1) % MODULUS;                    
+                row[k] = _data3.merkleRoot.verifyBranch(data4.ys[data4.j] + _data3.roudeg.div(4) * k, _friComponents[i].branchesForPolys).toUint(0); // TODO: devide 4 elements 
             }                
 
-            columnvals[j] = root2.verifyBranch(ys[j], branchForColumns).toUint(0); // TODO: devide 4 elements
-            // columnvals.push(root2.verifyBranch(ys[j], branchForColumns).toUint(0));  
-            xcoords.push(xcoord);
-            rows.push(row);
+            data4.columnvals[data4.j] = _friComponents[i].root.verifyBranch(data4.ys[data4.j], _friComponents[i].branchForColumns).toUint(0); // TODO: devide 4 elements
+            data4.xcoords[data4.j] = xcoord;
+            data4.rows[data4.j] = row;
         }
         
-        uint[][] memory polys = multiInterp4(xcoords, rows);
+        uint[][] memory polys = multiInterp4(data4.xcoords, data4.rows);
             
-        for (j = 0; j < polys.length; j++) { 
+        for (data4.j = 0; data4.j < polys.length; data4.j++) { 
             // evaluate each polynomials at special x coord
-            require(evalPolyAt(polys[j], abi.encodePacked(_merkleRoot).toUint(0) % MODULUS) == columnvals[j]);
+            require(evalPolyAt(polys[data4.j], abi.encodePacked(_data3.merkleRoot).toUint(0) % MODULUS) == data4.columnvals[data4.j]);
         }
-        return root2;
+        return _friComponents[i].root;
     }
 
-    function verifyDirectLowDegreeProof(uint _maxDegPlus1, bytes[] _directProof, bytes32 _merkleRoot, uint _excludeMultiplesOf) internal returns (bool) {
+    function verifyDirectLowDegreeProof(uint _maxDegPlus1, bytes[] _directProof, bytes32 _merkleRoot, uint _excludeMultiplesOf) private returns (bool) {
         uint[] memory data = new uint[](_directProof.length);
         uint i;        
         for (i = 0; i < _directProof.length; i++) {
@@ -261,8 +261,18 @@ contract VerifierContract {
         return true;
     }
     
-    function setNewStep(uint _newSteps) public {
+    function setNewStep(uint _newSteps) private {
         _steps = _newSteps;
+    }
+
+    function getRoudeg() private returns (uint) {
+        uint testVal = ROOTOFUNITY;
+        uint roudeg = 1;
+        while( testVal != 1) {
+            roudeg *= 2;
+            testVal = (testVal * testVal) % MODULUS;
+        }
+        return roudeg;
     }
 
     function isPowerOf2(uint _x) public pure returns (bool) {
@@ -445,7 +455,7 @@ contract VerifierContract {
         return a;
     }
 
-    function multiInterp4(uint[][] _xsets, uint[][] _ysets) internal returns (uint[][]) {
+    function multiInterp4(uint[4][] _xsets, uint[4][] _ysets) internal returns (uint[][]) {
         uint[][] memory a = new uint[][](3);
         return a;
     }
