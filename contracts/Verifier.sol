@@ -253,7 +253,7 @@ contract VerifierContract {
             require((data2.px - data2.bx * evalPolyAt(data2.zeropoly2, data2.x) - evalPolyAt(data2.interpolant, data2.x)) % MODULUS == 0);
     
             // Check correctness of the linear combination
-            require((data2.lx - data2.dx - uint(keccak256(abi.encodePacked(_proof.root, 0x01))) * data2.px - uint(keccak256(abi.encodePacked(_proof.root, 0x02))) * data2.px * data2.xToSteps -  uint(keccak256(abi.encodePacked(_proof.root, 0x03))) * data2.bx - uint(keccak256(abi.encodePacked(_proof.root, 0x04))) * data2.bx * data2.xToSteps) % MODULUS == 0);
+            require((data2.lx - data2.dx - uint(keccak256(abi.encodePacked(_proof.root, "0x01"))) * data2.px - uint(keccak256(abi.encodePacked(_proof.root, "0x02"))) * data2.px * data2.xToSteps -  uint(keccak256(abi.encodePacked(_proof.root, "0x03"))) * data2.bx - uint(keccak256(abi.encodePacked(_proof.root, "0x04"))) * data2.bx * data2.xToSteps) % MODULUS == 0);
             return true;
         }
 
