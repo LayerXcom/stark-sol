@@ -43,4 +43,15 @@ library Merkle {
         require(computedHash.equal(abi.encodePacked(_root)));         
         return _proof[0];
     }
+
+    function merkelize(uint[]) internal returns (bytes32[]) {
+        bytes32[] memory a = new bytes32[](3);
+        return a;
+    }
+
+    function permute4(uint[]) internal returns (uint[]) {
+        uint[] memory a = new uint[](3);
+        return a;
+    }
+        
 }
