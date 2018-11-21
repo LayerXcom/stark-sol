@@ -623,7 +623,7 @@ contract VerifierContract {
             uint[] memory num = divPolys(root, tmp);
             for (uint j = 0; j < _ys.length; j++) {
                 if ((num[j] != 0) && (_ys[i] != 0)) {
-                    out[j] += num[j].mul(yslice);
+                    out[j] += num[j].mul(yslice).mod(MODULUS);
                 }
             }
         }
@@ -632,8 +632,23 @@ contract VerifierContract {
 
     // optimized for degree 2
     function lagrangeInterp2(uint[2] _xs, uint[2] _ys) internal returns (uint[]) {
-        uint[] memory a = new uint[](3);
-        return a;
+        uint[] memory eq0 = new uint[](2);
+        uint[] memory eq1 = new uint[](2);
+        eq0[0] = - _xs[1].mod(MODULUS);
+        eq1[0] = - _xs[0].mod(MODULUS);
+        eq0[1] = 1;
+        eq1[1] = 1;
+        uint e0 = evalPolyAt(eq0, _xs[0]);
+        uint e1 = evalPolyAt(eq1, _xs[1]);
+        uint invall = inv(e0.mul(e1));
+        uint invY0 = _ys[0].mul(invall).mul(e1);
+        uint invY1 = _ys[1].mul(invall).mul(e0);
+
+        uint[] memory out = new uint[](2);
+        for (uint i = 0; i < 2; i++) {
+            out[i] = ((eq0[i].mul(invY0)).add(eq1[i].mul(invY1))).mod(MODULUS);
+        }
+        return out;
     }
 
     // optimized for degree 4
