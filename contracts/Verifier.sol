@@ -691,17 +691,17 @@ contract VerifierContract {
 
         uint e01 = es[0].mul(es[1]);
         uint e23 = es[2].mul(es[3]);
-        uint invall = inv(e01.mul(e23));
+        uint i = inv(e01.mul(e23));
 
         uint[] memory invYs = new uint[](4);
-        invYs[0] = _ys[0].mul(invall).mul(es[1]).mul(e23).mod(MODULUS);
-        invYs[1] = _ys[1].mul(invall).mul(es[0]).mul(e23).mod(MODULUS);
-        invYs[2] = _ys[2].mul(invall).mul(es[3]).mul(e01).mod(MODULUS);
-        invYs[3] = _ys[3].mul(invall).mul(es[2]).mul(e01).mod(MODULUS);
+        invYs[0] = _ys[0].mul(i).mul(es[1]).mul(e23).mod(MODULUS);
+        invYs[1] = _ys[1].mul(i).mul(es[0]).mul(e23).mod(MODULUS);
+        invYs[2] = _ys[2].mul(i).mul(es[3]).mul(e01).mod(MODULUS);
+        invYs[3] = _ys[3].mul(i).mul(es[2]).mul(e01).mod(MODULUS);
 
 
         uint[] memory out = new uint[](4);
-        for (uint i = 0; i < 4; i++) {
+        for (i = 0; i < 4; i++) {
             out[i] = ((eqs[0][i].mul(invYs[0])
                 ).add(eqs[1][i].mul(invYs[1])
                 ).add(eqs[2][i].mul(invYs[2])
