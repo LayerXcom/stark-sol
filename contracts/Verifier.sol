@@ -117,7 +117,7 @@ contract VerifierContract {
                 pG1x: (_proof.root.verifyBranch((data.positions[i].add(data.skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1])).slice(0, 32).toUint(0),
                 dx: (_proof.root.verifyBranch(data.positions[i], data.branches[i * 3])).slice(32, 32).toUint(0),
                 bx: (_proof.root.verifyBranch((data.positions[i].add(data.skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1])).slice(64, 32).toUint(0),
-                zValue: polyDiv((((data.G2 ** data.positions[i]) % MODULUS) ** _steps) % MODULUS - 1, ((data.G2 ** data.positions[i]) % MODULUS) - data.lastStepPosition),
+                zValue: div((((data.G2 ** data.positions[i]) % MODULUS) ** _steps) % MODULUS - 1, ((data.G2 ** data.positions[i]) % MODULUS) - data.lastStepPosition),
                 kx: evalPolyAt(data.constantsMiniPolynomial, (((data.G2 ** data.positions[i]) % MODULUS) ** data.skips2) % MODULUS),
                 interpolant: lagrangeInterp2([1, data.lastStepPosition], [_input, _output]),
                 zeropoly2: mulPolys([uint(-1), 1], [-data.lastStepPosition, 1])
@@ -178,21 +178,6 @@ contract VerifierContract {
             }
         }
         return out;
-    }
-
-    function polyDiv(uint _x, uint _y) internal returns (uint) {
-        return 0;
-    }
-
-    function evalPolyAt(uint[] _p, uint _x) internal returns (uint) {
-        uint out = 0;
-        uint powerOfX = 1;
-
-        for (uint i = 0; i < _p.length; i++) {
-            out = out.add(powerOfX.mul(_p[i]));
-            powerOfX = powerOfX.mul(_x).mod(MODULUS);
-        }
-        return out.mod(MODULUS);
     }
 
     function _simple_ft(uint[] _vals, uint _modulus, uint[] _roots) internal returns (uint[]) {
@@ -305,6 +290,114 @@ contract VerifierContract {
         return _fft(_vals, _modulus, roots);
     }
 
+
+    // finite (polynomial) field operations
+    function add(uint x, uint y) internal returns (uint) {
+        return x.add(y).mod(MODULUS);
+    }
+
+    function sub(uint x, uint y) internal returns (uint) {
+        return x.sub(y).mod(MODULUS);
+    }
+
+    function mul(uint x, uint y) internal returns (uint) {
+        return x.mul(y).mod(MODULUS);
+    }
+
+    function exp(uint x, uint p) internal returns (uint) {
+        uint out = 1;
+        for (uint i = 1; i < p; i++) {
+            out = out.mul(x).mod(MODULUS);
+        }
+        return out;
+    }
+    /*
+        def inv(self, a):
+            if a == 0:
+                return 0
+            lm, hm = 1, 0
+            low, high = a % self.modulus, self.modulus
+            while low > 1:
+                r = high//low
+                nm, new = hm-lm*r, high-low*r
+                lm, low, hm, high = nm, new, lm, low
+            return lm % self.modulus
+
+    */
+
+    function inv(uint a) internal returns (uint) {
+        if (a == 0) {
+            return 0;
+        }
+        uint lm = 1;
+        uint hm = 0;
+        uint low = a.mod(MODULUS);
+        uint high = MODULUS;
+        while (low > 1) {
+            uint r = high.div(low);
+            uint nm  = hm.sub(lm.mul(r));
+            uint n = high.sub(low.mul(r));
+
+            lm = nm;
+            low = n;
+            hm = lm;
+            high= low;
+        }
+        return lm.mod(MODULUS);
+    }
+
+    function multiInv(uint[] _vals) internal returns (uint[]) {
+        uint[] memory partials = new uint[](_vals.length + 1);
+        partials[0] = 1;
+        for (uint i = 0; i < _vals.length; i++) {
+            uint y = 1;
+            if (_vals[i] != 0) {
+                y = _vals[i];
+            }
+            partials[i+1] = mul(partials[i], y);
+        }
+
+        uint[] memory out = new uint[](_vals.length);
+        uint v = partials[partials.length -1];
+        for (i = out.length - 1; i >= 0; i--) {
+            y = 1;
+            if (_vals[i] != 0) {
+                out[i] = mul(partials[i], v);
+                y = _vals[i];
+            } else {
+                out[i] = 0;
+            }
+            v = mul(v, y);
+        }
+        return out;
+    }
+
+    function div(uint x, uint y) internal returns (uint) {
+        return x.mul(inv(y));
+    }
+
+    function evalPolyAt(uint[] _p, uint _x) internal returns (uint) {
+        uint out = 0;
+        uint powerOfX = 1;
+
+        for (uint i = 0; i < _p.length; i++) {
+            out = out.add(powerOfX.mul(_p[i]));
+            powerOfX = powerOfX.mul(_x).mod(MODULUS);
+        }
+        return out.mod(MODULUS);
+    }
+
+    function mulPolys(uint[2] _a, uint[2] _b) internal returns (uint[]) {
+        uint[] memory out = new uint[]((_a.length).add(_b.length).sub(1));
+
+        for (uint i = 0; i < _a.length; i++) {
+            for (uint j = 0; j < _b.length; j++) {
+                out[i+j] = _a[i] * _b[j];
+            }
+        }
+        return out;
+    }
+
     function lagrangeInterp(uint[] _xs, uint[] _ys) internal returns (uint[]) {
         uint[] memory a = new uint[](3);
         return a;
@@ -319,16 +412,5 @@ contract VerifierContract {
     function multiInterp4(uint[][] _xsets, uint[][] _ysets) internal returns (uint[][]) {
         uint[][] memory a = new uint[][](3);
         return a;
-    }
-
-    function mulPolys(uint[2] _a, uint[2] _b) internal returns (uint[]) {
-        uint[] memory out = new uint[]((_a.length).add(_b.length).sub(1));
-
-        for (uint i = 0; i < _a.length; i++) {
-            for (uint j = 0; j < _b.length; j++) {
-                out[i+j] = _a[i] * _b[j];
-            }
-        }
-        return out;
     }
 }
