@@ -39,7 +39,7 @@ contract VerifierContract {
     
     struct Data2 {
         uint x;
-        uint xToThe_steps;
+        uint xToSteps;
         bytes mBranch1;
         bytes mBranch2;
         uint lx;
@@ -215,14 +215,14 @@ contract VerifierContract {
         
         Data memory data = Data({
             precision: _steps.mul(EXTENSION_FACTOR),
-            G2:  (7 ** ((MODULUS - 1).div(_steps.mul(EXTENSION_FACTOR)))) % MODULUS,  // TODO: fix not to be overflowed
-            skips: _steps.mul(EXTENSION_FACTOR).div(_steps),
+            G2:  (7 ** ((MODULUS - 1).div(data.precision)))) % MODULUS,  // TODO: fix not to be overflowed
+            skips: data.precision.div(_steps),
             skips2: _steps.div(_roundConstants.length),
-            lastStepPosition: (((7 ** ((MODULUS - 1).div(_steps.mul(EXTENSION_FACTOR)))) % MODULUS) ** ((_steps - 1).mul(_steps.div(_roundConstants.length)))) % MODULUS,
-            constantsMiniPolynomial: fft(_roundConstants, MODULUS, (((7 ** ((MODULUS - 1).div(_steps.mul(EXTENSION_FACTOR)))) % MODULUS) ** (EXTENSION_FACTOR * (_steps.div(_roundConstants.length)))) % MODULUS, true),
+            lastStepPosition: (data.G2 ** ((_steps - 1).mul(data.skips2))) % MODULUS,
+            constantsMiniPolynomial: fft(_roundConstants, MODULUS, (data.G2 ** (EXTENSION_FACTOR * (data.skips2))) % MODULUS, true),
             branches: _proof.branches,
             friComponent: _proof.friComponent,
-            positions: getPseudorandomIndices(_proof.lRoot, _steps.mul(EXTENSION_FACTOR), SPOT_CHECK_SECURITY_FACTOR, EXTENSION_FACTOR)
+            positions: getPseudorandomIndices(_proof.lRoot, data.precision), SPOT_CHECK_SECURITY_FACTOR, EXTENSION_FACTOR)
         });
         
         require(verifyLowDegreeProof(_proof.lRoot, G2, data.friComponent, _steps * 2, EXTENSION_FACTOR));
@@ -232,16 +232,16 @@ contract VerifierContract {
             
             Data2 memory data2 = Data2({
                 x: (data.G2 ** data.positions[i]) % MODULUS,
-                xToThe_steps: (((data.G2 ** data.positions[i]) % MODULUS) ** _steps) % MODULUS,
+                xToSteps: (data2.x ** _steps) % MODULUS,
                 mBranch1: _proof.root.verifyBranch(data.positions[i], data.branches[i * 3]),    // a branch check for P, D and B
                 mBranch2: _proof.root.verifyBranch((data.positions[i].add(data.skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1]),   // a branch check for P of g1x
                 lx: _proof.root.verifyBranch(data.positions[i], data.branches[i * 3 + 2]).toUint(0),  // a branch check for L
-                px: (_proof.root.verifyBranch(data.positions[i], data.branches[i * 3])).slice(0, 32).toUint(0),
-                pG1x: (_proof.root.verifyBranch((data.positions[i].add(data.skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1])).slice(0, 32).toUint(0),
-                dx: (_proof.root.verifyBranch(data.positions[i], data.branches[i * 3])).slice(32, 32).toUint(0),
-                bx: (_proof.root.verifyBranch((data.positions[i].add(data.skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1])).slice(64, 32).toUint(0),
-                zValue: polyDiv((((data.G2 ** data.positions[i]) % MODULUS) ** _steps) % MODULUS - 1, ((data.G2 ** data.positions[i]) % MODULUS) - data.lastStepPosition),
-                kx: evalPolyAt(data.constantsMiniPolynomial, (((data.G2 ** data.positions[i]) % MODULUS) ** data.skips2) % MODULUS),
+                px: (data2.mBranch1).slice(0, 32).toUint(0),
+                pG1x: (data2.mBranch2).slice(0, 32).toUint(0),
+                dx: (data2.mBranch1).slice(32, 32).toUint(0),
+                bx: (data2.mBranch2).slice(64, 32).toUint(0),
+                zValue: polyDiv((data2.xToSteps - 1, (data2.x - data.lastStepPosition),
+                kx: evalPolyAt(data.constantsMiniPolynomial, ((data2.x ** data.skips2) % MODULUS),
                 interpolant: lagrangeInterp2([1, data.lastStepPosition], [_input, _output]),
                 zeropoly2: mulPolys([uint(-1), 1], [-data.lastStepPosition, 1])
             });                        
