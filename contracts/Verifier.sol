@@ -603,8 +603,31 @@ contract VerifierContract {
     }
 
     function lagrangeInterp(uint[] _xs, uint[] _ys) internal returns (uint[]) {
-        uint[] memory a = new uint[](3);
-        return a;
+        uint[] memory root = zPoly(_xs);
+        require(root.length == _ys.length + 1);
+
+        uint[] memory denoms = new uint[](_xs.length);
+        uint[] memory tmp = new uint[](2);
+        tmp[1] = 1;
+        for (uint i = 0; i < num.length; i++) {
+            tmp[0] = _xs[i];
+            denoms[i] = evalPolyAt(divPolys(root, tmp), _xs[i]);
+        }
+
+        uint[] memory invdenoms = multiInv(denoms);
+        uint[] memory out = new uint[](_ys.length);
+
+        for (i = 0; i < _xs.length; i++) {
+            uint yslice = mul(_ys[i], invdenoms[i]);
+            tmp[0] = _xs[i];
+            uint[] memory num = divPolys(root, tmp);
+            for (uint j = 0; j < _ys.length; j++) {
+                if ((num[j] != 0) && (_ys[i] != 0)) {
+                    out[j] += num[j].mul(yslice);
+                }
+            }
+        }
+        return out;
     }
 
     // optimized for degree 2
@@ -613,8 +636,21 @@ contract VerifierContract {
         return a;
     }
 
+    // optimized for degree 4
+    function lagrangeInterp4(uint[2] _xs, uint[2] _ys) internal returns (uint[]) {
+        uint[] memory a = new uint[](3);
+        return a;
+    }
+
     function multiInterp4(uint[][] _xsets, uint[][] _ysets) internal returns (uint[][]) {
         uint[][] memory a = new uint[][](3);
         return a;
+    }
+
+    function evalQuartic(uint[] p, uint x) internal returns (uint) {
+        require(p.length == 4);
+        uint xsq = x.mul(x).mod(MODULUS);
+        uint xcb = xsq.mul(x).mod(MODULUS);
+        return (p[0] + p[1].mul(x) + p[2] * xsq + p[3] * xcb).mod(MODULUS);
     }
 }
