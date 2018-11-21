@@ -230,7 +230,7 @@ contract VerifierContract {
         return out;
     }
 
-    function fft(uint[] _vals, uint _modulus, uint _rootOfUnity, bool isInv) internal returns (uint[]) {
+    function fft(uint[] _vals, uint _modulus, uint _rootOfUnity, bool _isInv) internal returns (uint[]) {
         require(_vals.length.mod(2) == 0);
 
         // calculate the order
@@ -268,7 +268,7 @@ contract VerifierContract {
 
         _vals = arr;
 
-        if (isInv) {
+        if (_isInv) {
             for (i = 0; i < roots.length; i++) {
                 arr[i] = roots[roots.length.sub(1).sub(i)];
             }
@@ -292,46 +292,34 @@ contract VerifierContract {
 
 
     // finite (polynomial) field operations
-    function add(uint x, uint y) internal returns (uint) {
-        return x.add(y).mod(MODULUS);
+    function add(uint _x, uint _y) internal returns (uint) {
+        return _x.add(_y).mod(MODULUS);
     }
 
-    function sub(uint x, uint y) internal returns (uint) {
-        return x.sub(y).mod(MODULUS);
+    function sub(uint _x, uint _y) internal returns (uint) {
+        return _x.sub(_y).mod(MODULUS);
     }
 
-    function mul(uint x, uint y) internal returns (uint) {
-        return x.mul(y).mod(MODULUS);
+    function mul(uint _x, uint _y) internal returns (uint) {
+        return _x.mul(_y).mod(MODULUS);
     }
 
-    function exp(uint x, uint p) internal returns (uint) {
+    function exp(uint _x, uint _p) internal returns (uint) {
         uint out = 1;
-        for (uint i = 1; i < p; i++) {
-            out = out.mul(x).mod(MODULUS);
+        for (uint i = 1; i < _p; i++) {
+            out = out.mul(_x).mod(MODULUS);
         }
         return out;
     }
-    /*
-        def inv(self, a):
-            if a == 0:
-                return 0
-            lm, hm = 1, 0
-            low, high = a % self.modulus, self.modulus
-            while low > 1:
-                r = high//low
-                nm, new = hm-lm*r, high-low*r
-                lm, low, hm, high = nm, new, lm, low
-            return lm % self.modulus
 
-    */
-
-    function inv(uint a) internal returns (uint) {
-        if (a == 0) {
+    function inv(uint _a) internal returns (uint) {
+        if (_a == 0) {
             return 0;
         }
+
         uint lm = 1;
         uint hm = 0;
-        uint low = a.mod(MODULUS);
+        uint low = _a.mod(MODULUS);
         uint high = MODULUS;
         while (low > 1) {
             uint r = high.div(low);
@@ -372,8 +360,8 @@ contract VerifierContract {
         return out;
     }
 
-    function div(uint x, uint y) internal returns (uint) {
-        return x.mul(inv(y));
+    function div(uint _x, uint _y) internal returns (uint) {
+        return _x.mul(inv(_y));
     }
 
     function evalPolyAt(uint[] _p, uint _x) internal returns (uint) {
@@ -385,6 +373,70 @@ contract VerifierContract {
             powerOfX = powerOfX.mul(_x).mod(MODULUS);
         }
         return out.mod(MODULUS);
+    }
+
+    function addPolys(uint[] _a, uint[] _b) internal returns (uint[]) {
+        uint l = _a.length;
+        if (l < _b.length) {
+            l = _b.length;
+        }
+
+        uint[] memory out = new uint[](l);
+        for (uint i = 0; i < l; i++) {
+            uint aCoff = 0;
+            if (i < _a.length) {
+                aCoff = _a[i];
+            }
+            uint bCoff = 0;
+            if (i < _b.length) {
+                bCoff = _b[i];
+            }
+            out[i] = aCoff.add(bCoff).mod(MODULUS);
+        }
+        return out;
+    }
+
+    function subPolys(uint[] _a, uint[] _b) internal returns (uint[]) {
+        uint l = _a.length;
+        if (l < _b.length) {
+            l = _b.length;
+        }
+
+        uint[] memory out = new uint[](l);
+        for (uint i = 0; i < l; i++) {
+            uint aCoff = 0;
+            if (i < _a.length) {
+                aCoff = _a[i];
+            }
+            uint bCoff = 0;
+            if (i < _b.length) {
+                bCoff = _b[i];
+            }
+            out[i] = aCoff.sub(bCoff).mod(MODULUS);
+        }
+        return out;
+    }
+
+    function mulByConst(uint[] _a, uint _c) internal returns (uint[]) {
+        for (uint i = 0; i < _a.length; i++) {
+            _a[i] = _a[i].mul(_c).mod(MODULUS);
+        }
+    }
+
+    function divPolys(uint[] _a, uint[] _b) internal returns (uint[]) {
+        require(_a.length >= _b.length);
+    }
+
+    function zPoly(uint[] _xs) internal returns (uint[]) {
+        uint[] memory out = new uint[](_xs.length + 1);
+        out[out.length -1] = 1; // top degree
+
+        for (uint i = 0; i < _xs.length; i++) {
+            for (uint j = 0; j < i; j++) {
+                out[out.length -1 - 1 - j] = out[out.length -1 - j].mul(_xs[i]);
+            }
+        }
+        return out;
     }
 
     function mulPolys(uint[2] _a, uint[2] _b) internal returns (uint[]) {
