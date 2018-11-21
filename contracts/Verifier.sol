@@ -9,6 +9,7 @@ contract VerifierContract {
     using SafeMath for uint;
     using BytesLib for bytes;
     using Merkle for bytes32;
+    using Merkle for uint[];
 
     struct Proof {
         bytes32 root;               // merkle root of P, D and B - evaluations 
@@ -22,7 +23,7 @@ contract VerifierContract {
         // bytes[] branches;  // branches of the column and the four values in the polynominal
         bytes[] branchForColumns;
         bytes[] branchesForPolys;
-        bytes32[] directProof;
+        bytes[] directProof;
     }
     
     struct Data {
@@ -58,6 +59,9 @@ contract VerifierContract {
     uint constant SPOT_CHECK_SECURITY_FACTOR = 80;
     uint constant EXTENSION_FACTOR = 8;
 
+    // (7 ** (MODULUS / 16384)) % MODULUS    
+    uint constant ROOTOFUNITY = 109030522278086733194866766814799573444537703137521227146756705386680725962607;
+
     uint _steps = 2 ** 3;
     uint G2 = (7 ** ((MODULUS - 1).div(_steps.mul(EXTENSION_FACTOR)))) % MODULUS;
     uint skips = _steps.mul(EXTENSION_FACTOR).div(_steps);
@@ -65,8 +69,8 @@ contract VerifierContract {
     uint precision = _steps.mul(EXTENSION_FACTOR);
 
 
-    function getRoudeg(uint _rootOfUnity, uint _mod) private returns (uint) {
-        uint testVal = _rootOfUnity;
+    function getRoudeg() private returns (uint) {
+        uint testVal = ROOTOFUNITY;
         uint roudeg = 1;
         while( testVal != 1) {
             roudeg *= 2;
@@ -77,23 +81,25 @@ contract VerifierContract {
 
         // verify an FRI proof
     function verifyLowDegreeProof(
-        bytes32 _merkleRoot, 
-        uint _rootOfUnity, 
+        bytes32 _merkleRoot,  
+        uint _rootOfUnity,
         FriComponent[] _friComponents,         
         uint _maxDegPlus1, 
         uint _modulus, 
         uint _excludeMultiplesOf
     ) internal returns (bool) 
     {
-        uint roudeg = getRoudeg(_rootOfUnity, MODULUS);
+        uint roudeg = getRoudeg();
 
         // Powers of the given root of unity 1, p, p**2, p**3 such that p**4 = 1
         uint[4] memory quadraticRootsOfUnity = [1,
                                          (_rootOfUnity ** (roudeg.div(4))) % MODULUS,
                                          (_rootOfUnity ** (roudeg.div(2))) % MODULUS,
                                          (_rootOfUnity ** (roudeg.mul(3).div(4))) % MODULUS];
-        
-        for (uint i; i < _friComponents.length - 1; i++) {
+        uint i;
+        uint k;
+        uint rootOfUnity = _rootOfUnity;
+        for (i = 0; i < _friComponents.length - 1; i++) {
             bytes32 root2 = _friComponents[i].root;
             bytes[] memory branchForColumns = _friComponents[i].branchForColumns;
             bytes[] memory branchesForPolys = _friComponents[i].branchesForPolys;
@@ -104,10 +110,11 @@ contract VerifierContract {
             uint[][] storage xcoords;    // TODO: calcurate length
             uint[][] storage rows;
             uint[] storage columnvals;
-            for (uint j; j < ys.length; j++) {
-                uint x1 = (_rootOfUnity ** ys[j]) % MODULUS;
+            uint j;
+            for (j = 0; j < ys.length; j++) {
+                uint x1 = (rootOfUnity ** ys[j]) % MODULUS; // TODO: fix
                 
-                for (uint k; k < 4; k++) {
+                for (k = 0; k < 4; k++) {
                     uint[] storage xcoord;
                     uint[] storage row;
                     uint[] storage columnval;
@@ -123,59 +130,115 @@ contract VerifierContract {
             
             uint[][] memory polys = multiInterp4(xcoords, rows);
                 
-            for (uint l; l < polys.length; l++) {
-                require(evalPolyAt(polys[l], specialX) == columnvals[l]);
+            for (j = 0; j < polys.length; j++) {
+                require(evalPolyAt(polys[j], specialX) == columnvals[j]);
             }
             
             _merkleRoot = root2;
-            _rootOfUnity = (_rootOfUnity ** 4) % MODULUS;
+            rootOfUnity = (rootOfUnity ** 4) % MODULUS;
             _maxDegPlus1 = _maxDegPlus1.div(4);
             roudeg = roudeg.div(4);
         }
         
         // uint[] memory data = new uint[](_friComponents[_friComponents.length - 1].directProof.length);
-        uint[] storage data; // TODO: calc length
-        for (uint m; m < _friComponents[_friComponents.length - 1].directProof.length; m++) {
-            data.push((_friComponents[_friComponents.length - 1].directProof[m]).toUint(0));
-        }
+        // // uint[] storage data; // TODO: calc length
+        // for (i = 0; i < _friComponents[_friComponents.length - 1].directProof.length; i++) {
+        //     data[i] = (_friComponents[_friComponents.length - 1].directProof[i]).toUint(0)
+        //     // data.push((_friComponents[_friComponents.length - 1].directProof[i]).toUint(0));
+        // }
         
+        // require(_maxDegPlus1 <= 16);
+        
+        // bytes32[] memory mtree = data.merkelize();
+        // require(mtree[1] == _merkleRoot);
+        
+        // uint[] memory powers = getPowerCycle(ROOTOFUNITY, MODULUS);
+        // uint[] storage pts;
+        
+        // if (_excludeMultiplesOf != 0) {            
+        //     for (k = 0; k < data.length; k++) {
+        //         if (k % _excludeMultiplesOf != 0) {
+        //             pts.push(k);
+        //         }
+        //     }
+        // } else {
+        //     for (k = 0; k < data.length; k++) {
+        //         pts.push(k);
+        //     }
+        // }
+                
+        // uint[] memory slicedPts = new uint[](_maxDegPlus1);
+        
+        // for (i = 0; i < _maxDegPlus1; i++) {
+        //     slicedPts[i] = pts[i];            
+        // }
+
+        // uint[] memory xs2 = new uint[](slicedPts.length);
+        // uint[] memory ys2 = new uint[](slicedPts.length);
+        
+        // for (i = 0; i < slicedPts.length; i++) {
+        //     xs2[i] = powers[i];            
+        //     ys2[i] = data[i];            
+        // }
+        
+        // uint[] memory poly = lagrangeInterp(xs2, ys2);
+        
+        // for (i = 0; i < slicedPts.length; i++) {
+        //     require(evalPolyAt(poly, powers[i]) == data[i]);
+        // }
+
+        require(verifyDirectLowDegreeProof(_maxDegPlus1, _friComponents[_friComponents.length - 1].directProof, _merkleRoot, _excludeMultiplesOf));
+
+        return true;
+    }
+
+    function verifyDirectLowDegreeProof(uint _maxDegPlus1, bytes[] _directProof, bytes32 _merkleRoot, uint _excludeMultiplesOf) internal returns (bool) {
+        uint[] memory data = new uint[](_directProof.length);
+        uint i;
+        // uint[] storage data; // TODO: calc length
+        for (i = 0; i < _directProof.length; i++) {
+            data[i] = (_directProof[i]).toUint(0);
+            // data.push((_friComponents[_friComponents.length - 1].directProof[i]).toUint(0));
+        }
+
         require(_maxDegPlus1 <= 16);
         
         bytes32[] memory mtree = data.merkelize();
         require(mtree[1] == _merkleRoot);
-        
-        uint[] memory powers = getPowerCycle(_rootOfUnity, MODULUS);
-        uint[] storage pts;
-        
-        if (_excludeMultiplesOf != 0) {
-            for (uint n; n < data.length; n++) {
-                if (n % _excludeMultiplesOf != 0) {
-                    pts.push(n);
+
+        uint[] memory powers = getPowerCycle(ROOTOFUNITY, MODULUS);
+        uint[] memory pts = new uint[](data.length);
+
+        if (_excludeMultiplesOf != 0) {            
+            for (i = 0; i < data.length; i++) {
+                if (i % _excludeMultiplesOf != 0) {
+                    pts[i] = i;
                 }
             }
         } else {
-            for (uint o; o < data.length; o++) {
-                pts.push(o);
+            for (i = 0; i < data.length; i++) {
+                pts[i] = i;
             }
         }
+
+        uint[] memory slicedPts = new uint[](_maxDegPlus1);
         
-        uint[] storage xs2;
-        uint[] storage ys2;
-        uint[] storage slicedPts;
-        
-        for (uint p; p < _maxDegPlus1; p++) {
-            slicedPts.push(pts[p]);
+        for (i = 0; i < _maxDegPlus1; i++) {
+            slicedPts[i] = pts[i];            
         }
+
+        uint[] memory xs2 = new uint[](slicedPts.length);
+        uint[] memory ys2 = new uint[](slicedPts.length);
         
-        for (uint q; q < slicedPts.length; q++) {
-            xs2.push(powers[q]);
-            ys2.push(data[q]);
+        for (i = 0; i < slicedPts.length; i++) {
+            xs2[i] = powers[i];            
+            ys2[i] = data[i];            
         }
         
         uint[] memory poly = lagrangeInterp(xs2, ys2);
         
-        for (uint r; r < slicedPts.length; r++) {
-            require(evalPolyAt(poly, powers[r]) == data[r]);
+        for (i = 0; i < slicedPts.length; i++) {
+            require(evalPolyAt(poly, powers[i]) == data[i]);
         }
 
         return true;
@@ -206,7 +269,7 @@ contract VerifierContract {
             positions: getPseudorandomIndices(_proof.lRoot, _steps.mul(EXTENSION_FACTOR), SPOT_CHECK_SECURITY_FACTOR, EXTENSION_FACTOR)
         });
         
-        require(verifyLowDegreeProof(_proof.lRoot, data.G2, data.friComponent, _steps * 2, MODULUS, EXTENSION_FACTOR));
+        require(verifyLowDegreeProof(_proof.lRoot, G2, data.friComponent, _steps * 2, MODULUS, EXTENSION_FACTOR));
 
 
         for (uint i; i < data.positions.length; i++) {
