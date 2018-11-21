@@ -1,4 +1,5 @@
-pragma solidity ^0.4.24;
+// pragma solidity ^0.4.24;
+pragma solidity >=0.4.24 <0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "./SafeMath.sol";
@@ -89,7 +90,7 @@ contract VerifierContract {
     function verifyLowDegreeProof(
         bytes32 _merkleRoot,  
         uint _rootOfUnity,
-        FriComponent[] _friComponents,      
+        FriComponent[] memory _friComponents,      
         uint _maxDegPlus1,         
         uint _excludeMultiplesOf
     ) internal returns (bool) 
@@ -100,7 +101,7 @@ contract VerifierContract {
             maxDegPlus1: _maxDegPlus1,
             roudeg: getRoudeg(),
             // Powers of the given root of unity 1, p, p**2, p**3 such that p**4 = 1
-            quarticRootsOfUnity: [1, (_rootOfUnity ** (data3.roudeg.div(4))) % MODULUS, (_rootOfUnity ** (data3.roudeg.div(2))) % MODULUS, (_rootOfUnity ** (data3.roudeg.mul(3).div(4))) % MODULUS],                                                                                                                        
+            quarticRootsOfUnity: [1, (_rootOfUnity ** (getRoudeg().div(4))) % MODULUS, (_rootOfUnity ** (getRoudeg().div(2))) % MODULUS, (_rootOfUnity ** (getRoudeg().mul(3).div(4))) % MODULUS],                                                                                                                        
             excludeMultiplesOf: _excludeMultiplesOf
         });
 
@@ -116,22 +117,21 @@ contract VerifierContract {
         return true;
     }        
 
-    function verifyFriProofs(uint i, FriComponent[] _friComponents, Data3 _data3) private returns (bytes32) {
+    function verifyFriProofs(uint i, FriComponent[] memory _friComponents, Data3 memory _data3) private returns (bytes32) {
         Data4 memory data4 = Data4({
             ys: getPseudorandomIndices(_friComponents[i].root, _data3.roudeg.div(4), 10, _data3.excludeMultiplesOf),
-            xcoords: new uint[4][](data4.ys.length),
-            rows: new uint[4][](data4.ys.length),
-            columnvals: new uint[](data4.ys.length),
+            xcoords: new uint[4][](getPseudorandomIndices(_friComponents[i].root, _data3.roudeg.div(4), 10, _data3.excludeMultiplesOf).length),
+            rows: new uint[4][](getPseudorandomIndices(_friComponents[i].root, _data3.roudeg.div(4), 10, _data3.excludeMultiplesOf).length),
+            columnvals: new uint[](getPseudorandomIndices(_friComponents[i].root, _data3.roudeg.div(4), 10, _data3.excludeMultiplesOf).length),
             j: 0
         });
 
         for (data4.j = 0; data4.j < data4.ys.length; data4.j++) {
             uint x1 = (_data3.rootOfUnity ** data4.ys[data4.j]) % MODULUS;
+            uint[4] memory xcoord;
+            uint[4] memory row;
 
-            for (uint k = 0; k < 4; k++) {                    
-                uint[4] memory xcoord;
-                uint[4] memory row;
-                
+            for (uint k = 0; k < 4; k++) {                                                    
                 xcoord[k] = _data3.quarticRootsOfUnity[k].mul(x1) % MODULUS;                    
                 row[k] = _data3.merkleRoot.verifyBranch(data4.ys[data4.j] + _data3.roudeg.div(4) * k, _friComponents[i].branchesForPolys).toUint(0); // TODO: devide 4 elements 
             }                
@@ -150,7 +150,7 @@ contract VerifierContract {
         return _friComponents[i].root;
     }
 
-    function verifyDirectFriProof(uint _maxDegPlus1, bytes[] _directProof, bytes32 _merkleRoot, uint _excludeMultiplesOf) private returns (bool) {
+    function verifyDirectFriProof(uint _maxDegPlus1, bytes[] memory _directProof, bytes32 _merkleRoot, uint _excludeMultiplesOf) private returns (bool) {
         uint[] memory data = new uint[](_directProof.length);
         uint i;        
         for (i = 0; i < _directProof.length; i++) {
@@ -204,9 +204,9 @@ contract VerifierContract {
     function verifyMimcProof(
         uint _input, 
         // uint _steps, 
-        uint[] _roundConstants, 
+        uint[] memory _roundConstants, 
         uint _output, 
-        Proof _proof        
+        Proof memory _proof        
     ) public returns (bool) 
     {
         require(_steps <= 2 ** 32);
@@ -215,14 +215,14 @@ contract VerifierContract {
         
         Data memory data = Data({
             precision: _steps.mul(EXTENSION_FACTOR),
-            G2:  (7 ** ((MODULUS - 1).div(data.precision)))) % MODULUS,  // TODO: fix not to be overflowed
-            skips: data.precision.div(_steps),
+            G2:  (7 ** ((MODULUS - 1).div(_steps.mul(EXTENSION_FACTOR)))) % MODULUS,  // TODO: fix not to be overflowed
+            skips: _steps.mul(EXTENSION_FACTOR).div(_steps),
             skips2: _steps.div(_roundConstants.length),
-            lastStepPosition: (data.G2 ** ((_steps - 1).mul(data.skips2))) % MODULUS,
-            constantsMiniPolynomial: fft(_roundConstants, MODULUS, (data.G2 ** (EXTENSION_FACTOR * (data.skips2))) % MODULUS, true),
+            lastStepPosition: (((7 ** ((MODULUS - 1).div(_steps.mul(EXTENSION_FACTOR)))) % MODULUS) ** ((_steps - 1).mul(_steps.div(_roundConstants.length)))) % MODULUS,
+            constantsMiniPolynomial: fft(_roundConstants, MODULUS, (((7 ** ((MODULUS - 1).div(_steps.mul(EXTENSION_FACTOR)))) % MODULUS) ** (EXTENSION_FACTOR * (_steps.div(_roundConstants.length)))) % MODULUS, true),
             branches: _proof.branches,
             friComponent: _proof.friComponent,
-            positions: getPseudorandomIndices(_proof.lRoot, data.precision), SPOT_CHECK_SECURITY_FACTOR, EXTENSION_FACTOR)
+            positions: getPseudorandomIndices(_proof.lRoot, _steps.mul(EXTENSION_FACTOR), SPOT_CHECK_SECURITY_FACTOR, EXTENSION_FACTOR)
         });
         
         require(verifyLowDegreeProof(_proof.lRoot, G2, data.friComponent, _steps * 2, EXTENSION_FACTOR));
@@ -232,16 +232,16 @@ contract VerifierContract {
             
             Data2 memory data2 = Data2({
                 x: (data.G2 ** data.positions[i]) % MODULUS,
-                xToSteps: (data2.x ** _steps) % MODULUS,
+                xToSteps: (((data.G2 ** data.positions[i]) % MODULUS) ** _steps) % MODULUS,
                 mBranch1: _proof.root.verifyBranch(data.positions[i], data.branches[i * 3]),    // a branch check for P, D and B
                 mBranch2: _proof.root.verifyBranch((data.positions[i].add(data.skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1]),   // a branch check for P of g1x
                 lx: _proof.root.verifyBranch(data.positions[i], data.branches[i * 3 + 2]).toUint(0),  // a branch check for L
-                px: (data2.mBranch1).slice(0, 32).toUint(0),
-                pG1x: (data2.mBranch2).slice(0, 32).toUint(0),
-                dx: (data2.mBranch1).slice(32, 32).toUint(0),
-                bx: (data2.mBranch2).slice(64, 32).toUint(0),
-                zValue: polyDiv((data2.xToSteps - 1, (data2.x - data.lastStepPosition),
-                kx: evalPolyAt(data.constantsMiniPolynomial, ((data2.x ** data.skips2) % MODULUS),
+                px: (_proof.root.verifyBranch(data.positions[i], data.branches[i * 3])).slice(0, 32).toUint(0),
+                pG1x: (_proof.root.verifyBranch((data.positions[i].add(data.skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1])).slice(0, 32).toUint(0),
+                dx: (_proof.root.verifyBranch(data.positions[i], data.branches[i * 3])).slice(32, 32).toUint(0),
+                bx: (_proof.root.verifyBranch((data.positions[i].add(data.skips)) % _steps.mul(EXTENSION_FACTOR), data.branches[i * 3 + 1])).slice(64, 32).toUint(0),
+                zValue: polyDiv((((data.G2 ** data.positions[i]) % MODULUS) ** _steps) % MODULUS - 1, ((data.G2 ** data.positions[i]) % MODULUS) - data.lastStepPosition),
+                kx: evalPolyAt(data.constantsMiniPolynomial, (((data.G2 ** data.positions[i]) % MODULUS) ** data.skips2) % MODULUS),
                 interpolant: lagrangeInterp2([1, data.lastStepPosition], [_input, _output]),
                 zeropoly2: mulPolys([uint(-1), 1], [-data.lastStepPosition, 1])
             });                        
@@ -253,7 +253,7 @@ contract VerifierContract {
             require((data2.px - data2.bx * evalPolyAt(data2.zeropoly2, data2.x) - evalPolyAt(data2.interpolant, data2.x)) % MODULUS == 0);
     
             // Check correctness of the linear combination
-            require((data2.lx - data2.dx - uint(keccak256(abi.encodePacked(_proof.root, 0x01))) * data2.px - uint(keccak256(abi.encodePacked(_proof.root, 0x02))) * data2.px * data2.xToThe_steps -  uint(keccak256(abi.encodePacked(_proof.root, 0x03))) * data2.bx - uint(keccak256(abi.encodePacked(_proof.root, 0x04))) * data2.bx * data2.xToThe_steps) % MODULUS == 0);
+            require((data2.lx - data2.dx - uint(keccak256(abi.encodePacked(_proof.root, 0x01))) * data2.px - uint(keccak256(abi.encodePacked(_proof.root, 0x02))) * data2.px * data2.xToSteps -  uint(keccak256(abi.encodePacked(_proof.root, 0x03))) * data2.bx - uint(keccak256(abi.encodePacked(_proof.root, 0x04))) * data2.bx * data2.xToSteps) % MODULUS == 0);
             return true;
         }
 
@@ -286,7 +286,7 @@ contract VerifierContract {
         return false;
     }
 
-    function getPseudorandomIndices(bytes32 _seed, uint _modulus, uint _count, uint _excludeMultiplesOf) internal returns (uint[]) {
+    function getPseudorandomIndices(bytes32 _seed, uint _modulus, uint _count, uint _excludeMultiplesOf) internal returns (uint[] memory) {
         require(_modulus < 2**24);
         bytes memory data = abi.encodePacked(_seed);
 
@@ -313,7 +313,7 @@ contract VerifierContract {
         return out;
     }
 
-    function getPowerCycle(uint _r, uint _mod) internal returns (uint[]) {
+    function getPowerCycle(uint _r, uint _mod) internal returns (uint[] memory) {
         uint[] memory a = new uint[](3);
         return a;
     }
@@ -322,7 +322,7 @@ contract VerifierContract {
         return 0;
     }
 
-    function evalPolyAt(uint[] _p, uint _x) internal returns (uint) {
+    function evalPolyAt(uint[] memory _p, uint _x) internal returns (uint) {
         uint out = 0;
         uint powerOfX = 1;
 
@@ -333,7 +333,7 @@ contract VerifierContract {
         return out.mod(MODULUS);
     }
 
-    function _simple_ft(uint[] _vals, uint _modulus, uint[] _roots) internal returns (uint[]) {
+    function _simple_ft(uint[] memory _vals, uint _modulus, uint[] memory _roots) internal returns (uint[] memory) {
         uint[] memory out = new uint[](_vals.length);
         uint L = _roots.length;
 
@@ -348,7 +348,7 @@ contract VerifierContract {
         return out;
     }
 
-    function _fft(uint[] _vals, uint _modulus, uint[] _roots) internal returns (uint[]) {
+    function _fft(uint[] memory _vals, uint _modulus, uint[] memory _roots) internal returns (uint[] memory) {
         if (_roots.length <= 4) {
             return _simple_ft(_vals, _modulus, _roots);
         }
@@ -359,7 +359,8 @@ contract VerifierContract {
         uint[] memory R = new uint[](halfLength);
         uint[] memory _eRoots = new uint[](halfLength);
 
-        for (uint i = 0; i < _vals.length; i++) {
+        uint i;
+        for (i = 0; i < _vals.length; i++) {
             uint j = i.div(2);
             if (i.mod(2) == 0) {
                 L[j] = _vals[i];
@@ -383,7 +384,7 @@ contract VerifierContract {
         return out;
     }
 
-    function fft(uint[] _vals, uint _modulus, uint _rootOfUnity, bool isInv) internal returns (uint[]) {
+    function fft(uint[] memory _vals, uint _modulus, uint _rootOfUnity, bool isInv) internal returns (uint[] memory) {
         require(_vals.length.mod(2) == 0);
 
         // calculate the order
@@ -443,23 +444,23 @@ contract VerifierContract {
         return _fft(_vals, _modulus, roots);
     }
 
-    function lagrangeInterp(uint[] _xs, uint[] _ys) internal returns (uint[]) {
+    function lagrangeInterp(uint[] memory _xs, uint[] memory _ys) internal returns (uint[] memory) {
         uint[] memory a = new uint[](3);
         return a;
     }
 
     // optimized for degree 2
-    function lagrangeInterp2(uint[2] _xs, uint[2] _ys) internal returns (uint[]) {
+    function lagrangeInterp2(uint[2] memory _xs, uint[2] memory _ys) internal returns (uint[] memory) {
         uint[] memory a = new uint[](3);
         return a;
     }
 
-    function multiInterp4(uint[4][] _xsets, uint[4][] _ysets) internal returns (uint[][]) {
+    function multiInterp4(uint[4][] memory _xsets, uint[4][] memory _ysets) internal returns (uint[][] memory) {
         uint[][] memory a = new uint[][](3);
         return a;
     }
 
-    function mulPolys(uint[2] _a, uint[2] _b) internal returns (uint[]) {
+    function mulPolys(uint[2] memory _a, uint[2] memory _b) internal returns (uint[] memory) {
         uint[] memory out = new uint[]((_a.length).add(_b.length).sub(1));
 
         for (uint i = 0; i < _a.length; i++) {
