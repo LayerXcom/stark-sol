@@ -55,7 +55,7 @@ def test_stark():
     for component in proof[3][:-1]:
         component0.append(component[0])                                    
         component1 += [[list(map(lambda x: '0x' + x.hex(), c)) for c in component[1]]]        
-        component2 += [[list(map(lambda x: '0x' + x.hex(), i)) for i_comp in component[2] for i in i_comp]]        
+        component2 += [list(map(lambda x: '0x' + x.hex(), i)) for i_comp in component[2] for i in i_comp]   
         
     data = {
         'input': 3,
