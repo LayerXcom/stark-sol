@@ -184,7 +184,7 @@ class PrimeField():
             e3 = self.eval_quartic(eq3, xs[3])
             data.append([ys, eq0, eq1, eq2, eq3])
             invtargets.extend([e0, e1, e2, e3])
-            invalls = self.multi_inv(invtargets)
+        invalls = self.multi_inv(invtargets)
         o = []
         for (i, (ys, eq0, eq1, eq2, eq3)) in enumerate(data):
             invallz = invalls[i*4:i*4+4]
