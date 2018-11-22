@@ -4,3 +4,4 @@ pyblake2==1.1.2
 py-solc-simple==0.0.10
 pytest==3.7.1
 web3==4.8.1
+eth-hash==0.2.0

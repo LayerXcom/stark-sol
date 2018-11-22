@@ -1,8 +1,5 @@
-try:
-    from hashlib import blake2s
-except:
-    from pyblake2 import blake2s
-blake = lambda x: blake2s(x).digest()
+from eth_hash.auto import keccak
+blake = lambda x: keccak(x)
 
 def permute4(values):
     o = []
