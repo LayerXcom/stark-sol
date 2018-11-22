@@ -12,7 +12,7 @@ library Merkle {
         uint _x, 
         uint _L
     )
-        public
+        internal
         pure
         returns (uint)
     {
@@ -45,7 +45,7 @@ library Merkle {
         return _proof[0];
     }
 
-    function merkelize(uint[] memory _a) public pure returns (bytes32[] memory) {
+    function merkelize(uint[] memory _a) internal pure returns (bytes32[] memory) {
         uint[] memory c = permute4(_a);
         bytes32[] memory nodes = new bytes32[](c.length * 2);
 
@@ -60,7 +60,7 @@ library Merkle {
         return nodes;
     }
 
-    function permute4(uint[] memory _values) public pure returns (uint[] memory) {        
+    function permute4(uint[] memory _values) internal pure returns (uint[] memory) {        
         uint ld4 = _values.length.div(4);
         uint[] memory o = new uint[](_values.length);
 
