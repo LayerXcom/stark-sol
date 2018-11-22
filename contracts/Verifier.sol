@@ -69,7 +69,7 @@ contract VerifierContract {
         uint[4][] rows;
         uint[] columnvals;
         uint j;
-    }
+    }    
 
     // (for avoiding overflow) 2 ** 256 - 2 ** 32 * 351 + 1 =
     uint constant MODULUS = 115792089237316195423570985008687907853269984665640564039457584006405596119041;
@@ -162,7 +162,7 @@ contract VerifierContract {
         bytes32[] memory mtree = data.merkelize();
         require(mtree[1] == _merkleRoot);
 
-        uint[] memory powers = getPowerCycle(ROOTOFUNITY, MODULUS);
+        uint[] memory powers = getPowerCycle(ROOTOFUNITY);
         uint[] memory pts = new uint[](data.length);
 
         if (_excludeMultiplesOf != 0) {            
@@ -260,11 +260,11 @@ contract VerifierContract {
         return true;
     }
     
-    function setNewStep(uint _newSteps) private {
+    function setNewStep(uint _newSteps) internal {
         _steps = _newSteps;
     }
 
-    function getRoudeg() private returns (uint) {
+    function getRoudeg() internal pure returns (uint) {
         uint testVal = ROOTOFUNITY;
         uint roudeg = 1;
         while( testVal != 1) {
@@ -274,7 +274,18 @@ contract VerifierContract {
         return roudeg;
     }
 
-    function isPowerOf2(uint _x) public pure returns (bool) {
+    uint[] o; // TODO: replace to memory val
+
+    function getPowerCycle(uint _r) public returns (uint[] memory) {        
+        o.push(1);
+        o.push(_r);
+        for (uint i = 1; o[i] != 1; i++) {
+            o[i + 1] = o[i] * _r % MODULUS;
+        }         
+        return o;
+    }
+
+    function isPowerOf2(uint _x) internal pure returns (bool) {
         if (_x % 2 == 0) {
             return isPowerOf2(_x.div(2));
         }
@@ -470,8 +481,10 @@ contract VerifierContract {
     function multiInv(uint[] memory _vals) internal returns (uint[] memory) {
         uint[] memory partials = new uint[](_vals.length + 1);
         partials[0] = 1;
-        for (uint i = 0; i < _vals.length; i++) {
-            uint y = 1;
+        uint i;
+        uint y;
+        for (i = 0; i < _vals.length; i++) {
+            y = 1;
             if (_vals[i] != 0) {
                 y = _vals[i];
             }
@@ -609,7 +622,9 @@ contract VerifierContract {
         uint[] memory denoms = new uint[](_xs.length);
         uint[] memory tmp = new uint[](2);
         tmp[1] = 1;
-        for (uint i = 0; i < num.length; i++) {
+
+        uint i;
+        for (i = 0; i < _xs.length; i++) {
             tmp[0] = _xs[i];
             denoms[i] = evalPolyAt(divPolys(root, tmp), _xs[i]);
         }
@@ -631,7 +646,7 @@ contract VerifierContract {
     }
 
     // optimized for degree 2
-    function lagrangeInterp2(uint[] memory _xs, uint[] memory _ys) internal returns (uint[] memory) {
+    function lagrangeInterp2(uint[2] memory _xs, uint[2] memory _ys) internal returns (uint[] memory) {
         uint[] memory eq0 = new uint[](2);
         uint[] memory eq1 = new uint[](2);
         eq0[0] = - _xs[1].mod(MODULUS);
@@ -652,7 +667,7 @@ contract VerifierContract {
     }
 
     // optimized for degree 4
-    function lagrangeInterp4(uint[] memory _xs, uint[] memory _ys) internal returns (uint[] memory) {
+    function lagrangeInterp4(uint[4] memory _xs, uint[4] memory _ys) internal returns (uint[] memory) {
         uint[] memory xxs = new uint[](6);
         xxs[0] = _xs[0].mul(_xs[1]).mod(MODULUS); // 01
         xxs[1] = _xs[0].mul(_xs[2]).mod(MODULUS); // 02
@@ -711,7 +726,7 @@ contract VerifierContract {
         return out;
     }
 
-    function multiInterp4(uint[][] memory _xsets, uint[][] memory _ysets) internal returns (uint[][] memory) {
+    function multiInterp4(uint[4][] memory _xsets, uint[4][] memory _ysets) internal returns (uint[][] memory) {
         require(_xsets.length == _ysets.length);
         uint[][] memory out = new uint[][](_xsets.length);
 
