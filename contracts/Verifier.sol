@@ -706,23 +706,20 @@ contract VerifierContract {
         es[2] = evalPolyAt4(eqs[2], _xs[2]);
         es[3] = evalPolyAt4(eqs[3], _xs[3]);
 
-        uint e01 = es[0].mul(es[1]);
-        uint e23 = es[2].mul(es[3]);
-        uint i = inv(e01.mul(e23));
+        uint i = inv(es[0].mul(es[1]).mul(es[2].mul(es[3])));
 
         uint[] memory invYs = new uint[](4);
-        invYs[0] = _ys[0].mul(i).mul(es[1]).mul(e23).mod(MODULUS);
-        invYs[1] = _ys[1].mul(i).mul(es[0]).mul(e23).mod(MODULUS);
-        invYs[2] = _ys[2].mul(i).mul(es[3]).mul(e01).mod(MODULUS);
-        invYs[3] = _ys[3].mul(i).mul(es[2]).mul(e01).mod(MODULUS);
-
+        invYs[0] = _ys[0].mul(i).mul(es[1]).mul(es[2].mul(es[3])).mod(MODULUS);
+        invYs[1] = _ys[1].mul(i).mul(es[0]).mul(es[2].mul(es[3])).mod(MODULUS);
+        invYs[2] = _ys[2].mul(i).mul(es[3]).mul(es[0].mul(es[1])).mod(MODULUS);
+        invYs[3] = _ys[3].mul(i).mul(es[2]).mul(es[0].mul(es[1])).mod(MODULUS);
 
         uint[] memory out = new uint[](4);
         for (i = 0; i < 4; i++) {
             out[i] = ((eqs[0][i].mul(invYs[0])
-                ).add(eqs[1][i].mul(invYs[1])
-                ).add(eqs[2][i].mul(invYs[2])
-                ).add(eqs[3][i].mul(invYs[3])
+            ).add(eqs[1][i].mul(invYs[1])
+            ).add(eqs[2][i].mul(invYs[2])
+            ).add(eqs[3][i].mul(invYs[3])
             )).mod(MODULUS);
         }
         return out;
