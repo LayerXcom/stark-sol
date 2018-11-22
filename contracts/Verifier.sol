@@ -279,9 +279,11 @@ contract VerifierContract {
     function getPowerCycle(uint _r) public returns (uint[] memory) {        
         o.push(1);
         o.push(_r);
-        for (uint i = 1; o[i] != 1; i++) {
-            o[i + 1] = o[i] * _r % MODULUS;
-        }         
+        while (o[o.length - 1] != 1) {
+            o.push((o[o.length - 1] * _r) % MODULUS);
+        }
+              
+        delete o[o.length - 1];
         return o;
     }
 
