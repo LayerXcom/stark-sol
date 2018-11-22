@@ -6,6 +6,7 @@ import "./BytesLib.sol";
 library Merkle {
     using SafeMath for uint;
     using BytesLib for bytes;
+    using BytesLib for uint;
 
     function getIndexInPermuted(
         uint _x, 
@@ -45,8 +46,14 @@ library Merkle {
     }
 
     function merkelize(uint[] memory _a) internal returns (bytes32[] memory) {
-        bytes32[] memory a = new bytes32[](3);
-        return a;
+        uint[] c = permute4(_a);
+        bytes32[] memory nodes = new bytes32[](c.length * 2);
+
+        for (uint i = 0; i < c.length; i++) {
+            nodes[c.length - i] = keccak256(abi.encodePacked(nodes[(c.length - i) * 2], nodes[(c.length - i) * 2 + 1]));
+        }
+        
+        return nodes;
     }
 
     function permute4(uint[] memory _values) internal returns (uint[] memory) {        
