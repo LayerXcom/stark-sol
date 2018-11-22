@@ -46,10 +46,11 @@ library Merkle {
     }
 
     function merkelize(uint[] memory _a) internal returns (bytes32[] memory) {
-        uint[] c = permute4(_a);
+        uint[] memory c = permute4(_a);
         bytes32[] memory nodes = new bytes32[](c.length * 2);
 
         for (uint i = 0; i < c.length; i++) {
+            nodes[c.length + i - 1] = c[i].toBytes32FromUint();
             nodes[c.length - i] = keccak256(abi.encodePacked(nodes[(c.length - i) * 2], nodes[(c.length - i) * 2 + 1]));
         }
         
@@ -62,9 +63,9 @@ library Merkle {
 
         for (uint i = 0; i < ld4; i++) {
             o[i] = _values[i];
-            o[i + 1] = values[i + ld4];
-            o[i + 2] = values[i + ld4 * 2];
-            o[i + 3] = values[i + ld4 * 3];
+            o[i + 1] = _values[i + ld4];
+            o[i + 2] = _values[i + ld4 * 2];
+            o[i + 3] = _values[i + ld4 * 3];
         }
         return o;
     }

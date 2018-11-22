@@ -416,8 +416,10 @@ library BytesLib {
         return success;
     }
 
-    function toBytes(uint256 x) internal view returns (bytes b) {
-        b = new bytes(32);
+    function toBytes32FromUint(uint256 x) internal view returns (bytes32) {
+        bytes32 b;
         assembly { mstore(add(b, 32), x) }
+
+        return b;
     }
 }
