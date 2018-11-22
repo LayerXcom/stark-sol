@@ -51,7 +51,7 @@ class PrimeField():
             y += power_of_x * p_coeff
             power_of_x = (power_of_x * x) % self.modulus
         return y % self.modulus
-        
+
     # Arithmetic for polynomials
     def add_polys(self, a, b):
         return [((a[i] if i < len(a) else 0) + (b[i] if i < len(b) else 0))
@@ -60,7 +60,7 @@ class PrimeField():
     def sub_polys(self, a, b):
         return [((a[i] if i < len(a) else 0) - (b[i] if i < len(b) else 0))
                 % self.modulus for i in range(max(len(a), len(b)))]
-    
+
     def mul_by_const(self, a, c):
         return [(x*c) % self.modulus for x in a]
     
@@ -95,7 +95,7 @@ class PrimeField():
             for j in range(len(root)-1):
                 root[j] -= root[j+1] * x
         return [x % self.modulus for x in root]
-    
+
     # Given p+1 y values and x values with no errors, recovers the original
     # p+1 degree polynomial.
     # Lagrange interpolation works roughly in the following way.
@@ -103,13 +103,13 @@ class PrimeField():
     # 2. For each x, generate a polynomial which equals its corresponding
     #    y coordinate at that point and 0 at all other points provided.
     # 3. Add these polynomials together.
-    
+
     def lagrange_interp(self, xs, ys):
         # Generate master numerator polynomial, eg. (x - x1) * (x - x2) * ... * (x - xn)
         root = self.zpoly(xs)
         assert len(root) == len(ys) + 1
         # print(root)
-        # Generate per-value numerator polynomials, eg. for x=x2,
+        # Generate per-value numerator polynomials, eg. for x=x2
         # (x - x1) * (x - x3) * ... * (x - xn), by dividing the master
         # polynomial back by each x coordinate
         nums = [self.div_polys(root, [-x, 1]) for x in xs]
@@ -153,7 +153,7 @@ class PrimeField():
         inv_y2 = ys[2] * invall * e01 * e3 % m
         inv_y3 = ys[3] * invall * e01 * e2 % m
         return [(eq0[i] * inv_y0 + eq1[i] * inv_y1 + eq2[i] * inv_y2 + eq3[i] * inv_y3) % m for i in range(4)]
-    
+
     # Optimized version of the above restricted to deg-2 polynomials
     def lagrange_interp_2(self, xs, ys):
         m = self.modulus
