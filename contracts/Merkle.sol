@@ -49,9 +49,17 @@ library Merkle {
         return a;
     }
 
-    function permute4(uint[] memory _a) internal returns (uint[] memory) {
-        uint[] memory a = new uint[](3);
-        return a;
+    function permute4(uint[] memory _values) internal returns (uint[] memory) {        
+        uint ld4 = _values.length.div(4);
+        uint[] memory o = new uint[](_values.length);
+
+        for (uint i = 0; i < ld4; i++) {
+            o[i] = _values[i];
+            o[i + 1] = values[i + ld4];
+            o[i + 2] = values[i + ld4 * 2];
+            o[i + 3] = values[i + ld4 * 3];
+        }
+        return o;
     }
         
 }
