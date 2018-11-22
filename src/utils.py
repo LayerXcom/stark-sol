@@ -1,4 +1,4 @@
-from src.merkle_tree import keccak
+from eth_hash.auto import keccak
 
 # Get the set of powers of R, until but not including when the powers
 # loop back to 1
