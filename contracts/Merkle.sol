@@ -12,7 +12,7 @@ library Merkle {
         uint _x, 
         uint _L
     )
-        internal
+        public
         pure
         returns (uint)
     {
@@ -45,19 +45,22 @@ library Merkle {
         return _proof[0];
     }
 
-    function merkelize(uint[] memory _a) internal returns (bytes32[] memory) {
+    function merkelize(uint[] memory _a) public pure returns (bytes32[] memory) {
         uint[] memory c = permute4(_a);
         bytes32[] memory nodes = new bytes32[](c.length * 2);
 
-        for (uint i = 0; i < c.length; i++) {
-            nodes[c.length + i - 1] = c[i].toBytes32FromUint();
+        for (uint i = 1; i < c.length + 1; i++) {
             nodes[c.length - i] = keccak256(abi.encodePacked(nodes[(c.length - i) * 2], nodes[(c.length - i) * 2 + 1]));
+        }
+        
+        for (uint j = c.length; j < c.length * 2 - 1; j++) {
+            nodes[j] = c[j - c.length].toBytes().toBytes32(0); // TODO: fix to convert to bytes32 directly
         }
         
         return nodes;
     }
 
-    function permute4(uint[] memory _values) internal returns (uint[] memory) {        
+    function permute4(uint[] memory _values) public pure returns (uint[] memory) {        
         uint ld4 = _values.length.div(4);
         uint[] memory o = new uint[](_values.length);
 
