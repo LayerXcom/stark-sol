@@ -1,4 +1,4 @@
-from src.merkle_tree import merkelize, mk_branch, verify_branch, blake
+from src.merkle_tree import merkelize, mk_branch, verify_branch, keccak
 from src.compression import compress_fri, decompress_fri, compress_branches, decompress_branches, bin_length
 from src.poly_utils import PrimeField
 import time
@@ -99,10 +99,10 @@ def mk_mimc_proof(inp, steps, round_constants):
     # Based on the hashes of P, D and B, we select a random linear combination
     # of P * x^steps, P, B * x^steps, B and D, and prove the low-degreeness of that,
     # instead of proving the low-degreeness of P, B and D separately
-    k1 = int.from_bytes(blake(mtree[1] + b'\x01'), 'big')
-    k2 = int.from_bytes(blake(mtree[1] + b'\x02'), 'big')
-    k3 = int.from_bytes(blake(mtree[1] + b'\x03'), 'big')
-    k4 = int.from_bytes(blake(mtree[1] + b'\x04'), 'big')
+    k1 = int.from_bytes(keccak(mtree[1] + b'\x01'), 'big')
+    k2 = int.from_bytes(keccak(mtree[1] + b'\x02'), 'big')
+    k3 = int.from_bytes(keccak(mtree[1] + b'\x03'), 'big')
+    k4 = int.from_bytes(keccak(mtree[1] + b'\x04'), 'big')
 
     # Compute the linear combination. We don't even both calculating it in
     # coefficient form; we just compute the evaluations
@@ -162,10 +162,10 @@ def verify_mimc_proof(inp, steps, round_constants, output, proof):
     assert verify_low_degree_proof(l_root, G2, fri_proof, steps * 2, modulus, exclude_multiples_of=extension_factor)
 
     # Performs the spot checks
-    k1 = int.from_bytes(blake(m_root + b'\x01'), 'big')
-    k2 = int.from_bytes(blake(m_root + b'\x02'), 'big')
-    k3 = int.from_bytes(blake(m_root + b'\x03'), 'big')
-    k4 = int.from_bytes(blake(m_root + b'\x04'), 'big')
+    k1 = int.from_bytes(keccak(m_root + b'\x01'), 'big')
+    k2 = int.from_bytes(keccak(m_root + b'\x02'), 'big')
+    k3 = int.from_bytes(keccak(m_root + b'\x03'), 'big')
+    k4 = int.from_bytes(keccak(m_root + b'\x04'), 'big')
     samples = spot_check_security_factor
     positions = get_pseudorandom_indices(l_root, precision, samples,
                                          exclude_multiples_of=extension_factor)
