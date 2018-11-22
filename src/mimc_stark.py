@@ -1,10 +1,12 @@
-from src.merkle_tree import merkelize, mk_branch, verify_branch, keccak
+from src.merkle_tree import merkelize, mk_branch, verify_branch
 from src.compression import compress_fri, decompress_fri, compress_branches, decompress_branches, bin_length
 from src.poly_utils import PrimeField
 import time
 from src.fft import fft
 from src.fri import prove_low_degree, verify_low_degree_proof
 from src.utils import get_power_cycle, get_pseudorandom_indices, is_a_power_of_2
+
+from eth_hash.auto import keccak
 
 modulus = 2**256 - 2**32 * 351 + 1
 f = PrimeField(modulus)

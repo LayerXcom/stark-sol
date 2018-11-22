@@ -1,5 +1,4 @@
 from eth_hash.auto import keccak
-keccak = lambda x: keccak(x)
 
 def permute4(values):
     o = []
