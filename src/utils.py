@@ -1,4 +1,4 @@
-from src.merkle_tree import blake
+from src.merkle_tree import keccak
 
 # Get the set of powers of R, until but not including when the powers
 # loop back to 1
@@ -13,7 +13,7 @@ def get_pseudorandom_indices(seed, modulus, count, exclude_multiples_of=0):
     assert modulus < 2**24
     data = seed
     while len(data) < 4 * count:
-        data += blake(data[-32:])
+        data += keccak(data[-32:])
     if exclude_multiples_of == 0:
         return [int.from_bytes(data[i: i+4], 'big') % modulus for i in range(0, count * 4, 4)]
     else:
