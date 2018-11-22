@@ -712,8 +712,13 @@ contract VerifierContract {
     }
 
     function multiInterp4(uint[][] memory _xsets, uint[][] memory _ysets) internal returns (uint[][] memory) {
-        uint[][] memory a = new uint[][](3);
-        return a;
+        require(_xsets.length == _ysets.length);
+        uint[][] memory out = new uint[][](_xsets.length);
+
+        for (uint i = 0; i < _xsets.length; i++) {
+            out[i] = lagrangeInterp4(_xsets[i], _ysets[i]);
+        }
+        return out;
     }
 
     function evalPolyAt4(uint[4] memory _p, uint _x) internal returns (uint) {
