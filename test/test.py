@@ -51,12 +51,17 @@ def test_stark():
     component0 = []
     component1 = []    
     component2 = []
+    component3 = []
 
     for component in proof[3][:-1]:
         component0.append(component[0])                                    
         component1 += [[list(map(lambda x: '0x' + x.hex(), c)) for c in component[1]]]        
-        component2 += [list(map(lambda x: '0x' + x.hex(), i)) for i_comp in component[2] for i in i_comp]   
-        
+        component2 += [[list(map(lambda x: '0x' + x.hex(), i)) for i_comp in component[2] for i in i_comp]]
+
+    for i_comp in component2:
+        for i in range(len(i_comp) // 4):
+            component3 += [i_comp[i]]
+    
     data = {
         'input': 3,
         'steps': 2**LOGSTEPS,

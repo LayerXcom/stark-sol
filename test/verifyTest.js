@@ -1,5 +1,6 @@
-
-const proofData = require("./stark_proof.json");
+const fs = require("fs");
+const path = require("path");
+const proofData = JSON.parse(fs.readFileSync(path.resolve("test", "./stark_proof.json"), "utf8"));
 const { input, steps, output, proof } = proofData;
 const roundConstants = proofData.round_constants;
 
