@@ -288,15 +288,7 @@ contract VerifierContract {
     }
 
     function isPowerOf2(uint _x) internal pure returns (bool) {
-        if (_x % 2 == 0) {
-            return isPowerOf2(_x.div(2));
-        }
-
-        if (_x == 1) {
-            return true;
-        }
-
-        return false;
+        return _x != 0 && (_x & (_x - 1) == 0);
     }
 
     function getPseudorandomIndices(bytes32 _seed, uint _modulus, uint _count, uint _excludeMultiplesOf) internal returns (uint[] memory) {
